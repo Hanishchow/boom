@@ -1,18 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Eye, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
-import { createPageUrl } from '../utils';
+import { motion } from 'framer-motion';
 import { format } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  History as HistoryIcon, 
+  ArrowLeft, 
+  Calendar,
+  Sparkles,
+  Camera,
+  ClipboardList,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Trash2
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const skinTypeIcons = {
+  dry: '💧',
+  oily: '✨',
+  combination: '🎭',
+  normal: '🌿',
+  sensitive: '🌸'
+};
+
+const analysisTypeIcons = {
+  questionnaire: ClipboardList,
+  image: Camera,
+  combined: Sparkles
+};
 
 export default function History() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [analyses, setAnalyses] = useState([]);
+  const [profiles, setProfiles] = useState({});
 
   useEffect(() => {
     loadHistory();
@@ -20,51 +57,67 @@ export default function History() {
 
   const loadHistory = async () => {
     try {
-      const user = await base44.auth.me();
+      setLoading(true);
       
-      // Load all skin profiles for current user
-      const profiles = await base44.entities.SkinProfile.filter(
-        { created_by: user.email },
-        '-created_date',
-        50
-      );
+      // Load all analyses
+      const allAnalyses = await base44.entities.AnalysisHistory.list('-created_date', 20);
+      setAnalyses(allAnalyses);
 
-      setAnalyses(profiles);
-    } catch (error) {
-      console.error('Error loading history:', error);
-      toast.error('Failed to load history');
+      // Load corresponding profiles
+      const profileIds = [...new Set(allAnalyses.map(a => a.profile_id).filter(Boolean))];
+      const profileMap = {};
+      
+      for (const id of profileIds) {
+        const profs = await base44.entities.SkinProfile.filter({ id });
+        if (profs.length > 0) {
+          profileMap[id] = profs[0];
+        }
+      }
+      
+      setProfiles(profileMap);
+    } catch (err) {
+      console.error('Error loading history:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewAnalysis = (profileId) => {
-    navigate(createPageUrl('Analysis') + `?profile=${profileId}`);
+  const handleDelete = async (analysisId, profileId) => {
+    try {
+      // Delete analysis
+      await base44.entities.AnalysisHistory.delete(analysisId);
+      
+      // Delete related data
+      if (profileId) {
+        await base44.entities.SkinProfile.delete(profileId);
+        
+        const routines = await base44.entities.SkincareRoutine.filter({ profile_id: profileId });
+        for (const r of routines) {
+          await base44.entities.SkincareRoutine.delete(r.id);
+        }
+        
+        const products = await base44.entities.ProductRecommendation.filter({ profile_id: profileId });
+        for (const p of products) {
+          await base44.entities.ProductRecommendation.delete(p.id);
+        }
+      }
+      
+      // Refresh
+      await loadHistory();
+    } catch (err) {
+      console.error('Error deleting:', err);
+    }
   };
 
-  const handleDeleteAnalysis = async (profileId) => {
-    if (!confirm('Are you sure you want to delete this analysis?')) return;
-
-    try {
-      // Delete related data
-      await base44.entities.SkincareRoutine.delete({ profile_id: profileId });
-      await base44.entities.ProductRecommendation.delete({ profile_id: profileId });
-      await base44.entities.AnalysisHistory.delete({ profile_id: profileId });
-      await base44.entities.SkinProfile.delete({ id: profileId });
-
-      toast.success('Analysis deleted successfully');
-      loadHistory();
-    } catch (error) {
-      console.error('Error deleting analysis:', error);
-      toast.error('Failed to delete analysis');
-    }
+  const viewResults = (profileId) => {
+    navigate(createPageUrl('Results') + `?profile=${profileId}`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="w-10 h-10 mx-auto text-rose-500 animate-spin mb-4" />
           <p className="text-gray-600">Loading your history...</p>
         </div>
       </div>
@@ -72,122 +125,188 @@ export default function History() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={() => navigate(createPageUrl('Home'))}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Button>
-          <Button onClick={() => navigate(createPageUrl('Assessment'))}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            New Assessment
-          </Button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to={createPageUrl('Home')} className="flex items-center gap-2 text-gray-600 hover:text-gray-800">
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+          
+          <div className="flex items-center gap-2">
+            <HistoryIcon className="w-5 h-5 text-rose-500" />
+            <span className="font-semibold text-gray-800">Analysis History</span>
+          </div>
 
-        {/* Title */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Analysis History</h1>
-          <p className="text-gray-600">View and manage your past skin assessments</p>
+          <Link to={createPageUrl('SkinAnalysis')}>
+            <Button size="sm" className="bg-gradient-to-r from-rose-500 to-amber-500">
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">New</span>
+            </Button>
+          </Link>
         </div>
+      </header>
 
-        {/* History List */}
+      {/* Content */}
+      <main className="max-w-4xl mx-auto px-4 py-6">
         {analyses.length === 0 ? (
-          <Card className="border-2 border-dashed">
-            <CardContent className="text-center py-16">
-              <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Assessments Yet</h3>
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
+                <HistoryIcon className="w-8 h-8 text-rose-500" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">No Analysis Yet</h2>
               <p className="text-gray-600 mb-6">
-                Take your first skin assessment to get personalized recommendations
+                Start your first skin analysis to get personalized recommendations.
               </p>
-              <Button onClick={() => navigate(createPageUrl('Assessment'))}>
-                Start Your First Assessment
-              </Button>
+              <Link to={createPageUrl('SkinAnalysis')}>
+                <Button className="bg-gradient-to-r from-rose-500 to-amber-500">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Start Analysis
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {analyses.map((analysis) => (
-              <Card key={analysis.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">
-                        Assessment from {format(new Date(analysis.created_date), 'MMM d, yyyy')}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(analysis.created_date), 'h:mm a')}
+          <div className="space-y-4">
+            {analyses.map((analysis, idx) => {
+              const profile = profiles[analysis.profile_id];
+              const AnalysisIcon = analysisTypeIcons[analysis.analysis_type] || Sparkles;
+              
+              return (
+                <motion.div
+                  key={analysis.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="flex items-stretch">
+                        {/* Left Color Bar */}
+                        <div className="w-2 bg-gradient-to-b from-rose-400 to-amber-400" />
+                        
+                        {/* Content */}
+                        <div className="flex-1 p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              {/* Icon */}
+                              <div className="p-2 rounded-lg bg-gradient-to-br from-rose-100 to-amber-100">
+                                <AnalysisIcon className="w-5 h-5 text-rose-600" />
+                              </div>
+                              
+                              {/* Info */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-2xl">
+                                    {skinTypeIcons[analysis.skin_type_detected] || '🌟'}
+                                  </span>
+                                  <span className="font-semibold text-gray-800 capitalize">
+                                    {analysis.skin_type_detected} Skin
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                  <Calendar className="w-4 h-4" />
+                                  {format(new Date(analysis.created_date), 'MMM d, yyyy • h:mm a')}
+                                </div>
+
+                                {/* Concerns */}
+                                {analysis.concerns_detected && analysis.concerns_detected.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {analysis.concerns_detected.slice(0, 3).map((c, i) => (
+                                      <Badge 
+                                        key={i} 
+                                        variant="secondary" 
+                                        className="text-xs bg-gray-100 text-gray-700 capitalize"
+                                      >
+                                        {c.concern?.replace('_', ' ')}
+                                      </Badge>
+                                    ))}
+                                    {analysis.concerns_detected.length > 3 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        +{analysis.concerns_detected.length - 3} more
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Analysis Type Badge */}
+                                <div className="mt-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      analysis.analysis_type === 'combined' 
+                                        ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                                    }`}
+                                  >
+                                    {analysis.analysis_type === 'combined' ? 'Photo + Quiz' : 
+                                     analysis.analysis_type === 'image' ? 'Photo Analysis' : 'Quiz Only'}
+                                  </Badge>
+                                  
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`ml-2 text-xs ${
+                                      analysis.sensitivity_score === 'high' ? 'text-red-600' :
+                                      analysis.sensitivity_score === 'medium' ? 'text-amber-600' : 'text-green-600'
+                                    }`}
+                                  >
+                                    {analysis.sensitivity_score} sensitivity
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete this analysis and all related data. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDelete(analysis.id, analysis.profile_id)}
+                                      className="bg-red-500 hover:bg-red-600"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => viewResults(analysis.profile_id)}
+                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              >
+                                View
+                                <ChevronRight className="w-4 h-4 ml-1" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-800">
-                      {analysis.ai_adjusted_skin_type || analysis.skin_type}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Key Info */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-xs text-gray-500 mb-1">Sensitivity</div>
-                      <div className="font-medium capitalize">{analysis.sensitivity_score || 'Medium'}</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-xs text-gray-500 mb-1">Budget</div>
-                      <div className="font-medium capitalize">{analysis.budget_range || 'N/A'}</div>
-                    </div>
-                  </div>
-
-                  {/* Primary Concerns */}
-                  {analysis.primary_concerns && analysis.primary_concerns.length > 0 && (
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2">Primary Concerns:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {analysis.primary_concerns.map((concern, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {concern.replace(/_/g, ' ')}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Image Analysis Indicator */}
-                  {analysis.face_image_url && (
-                    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded-lg">
-                      <Eye className="w-4 h-4" />
-                      Includes AI image analysis
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      className="flex-1"
-                      onClick={() => handleViewAnalysis(analysis.id)}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleDeleteAnalysis(analysis.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
