@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, Shield, MapPin, TrendingUp, ArrowRight, CheckCircle } from 'lucide-react';
-import { createPageUrl } from './utils';
+import { createPageUrl } from '../utils';
 import SafetyDisclaimer from '../components/SafetyDisclaimer';
 
 export default function Home() {

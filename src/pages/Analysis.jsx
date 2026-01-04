@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Share2, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { createPageUrl } from './utils';
+import { createPageUrl } from '../utils';
 import SkinAnalysisCard from '../components/results/SkinAnalysisCard';
 import RoutineCard from '../components/results/RoutineCard';
 import ProductCard from '../components/results/ProductCard';

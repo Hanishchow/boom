@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { createPageUrl } from './utils';
+import { createPageUrl } from '../utils';
 import QuestionnaireStep from '../components/assessment/QuestionnaireStep';
 import ImageUpload from '../components/assessment/ImageUpload';
 import SafetyDisclaimer from '../components/SafetyDisclaimer';
