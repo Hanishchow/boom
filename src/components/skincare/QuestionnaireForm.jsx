@@ -156,7 +156,7 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
       return !!answers[currentQuestion.id];
     }
     if (currentQuestion.type === 'multiple') {
-      return (answers[currentQuestion.id] || []).length > 0;
+      return true; // Allow proceeding even with no selections
     }
     if (currentQuestion.type === 'location') {
       return !!answers.location_city;
