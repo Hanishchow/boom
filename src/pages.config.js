@@ -1,14 +1,12 @@
 import Home from './pages/Home';
-import Assessment from './pages/Assessment';
-import Analysis from './pages/Analysis';
-import History from './pages/History';
+import SkinAnalysis from './pages/SkinAnalysis';
+import Results from './pages/Results';
 
 
 export const PAGES = {
     "Home": Home,
-    "Assessment": Assessment,
-    "Analysis": Analysis,
-    "History": History,
+    "SkinAnalysis": SkinAnalysis,
+    "Results": Results,
 }
 
 export const pagesConfig = {
