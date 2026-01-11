@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Sparkles } from 'lucide-react';
 
 import QuestionnaireForm from '@/components/skincare/QuestionnaireForm';
+import DetailedQuestionnaire from '@/components/skincare/DetailedQuestionnaire';
 import ImageUpload from '@/components/skincare/ImageUpload';
 import { 
   analyzeQuestionnaire, 
@@ -17,19 +18,26 @@ import {
 } from '@/components/skincare/SkinAnalysisEngine';
 
 const STEPS = {
-  QUESTIONNAIRE: 'questionnaire',
+  BASIC_INFO: 'basic_info',
+  DETAILED_QUESTIONNAIRE: 'detailed_questionnaire',
   IMAGE_UPLOAD: 'image_upload',
   ANALYZING: 'analyzing'
 };
 
 export default function SkinAnalysis() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(STEPS.QUESTIONNAIRE);
+  const [currentStep, setCurrentStep] = useState(STEPS.BASIC_INFO);
+  const [basicData, setBasicData] = useState(null);
   const [questionnaireData, setQuestionnaireData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState('');
 
-  const handleQuestionnaireComplete = (data) => {
+  const handleBasicInfoComplete = (data) => {
+    setBasicData(data);
+    setCurrentStep(STEPS.DETAILED_QUESTIONNAIRE);
+  };
+
+  const handleDetailedQuestionnaireComplete = (data) => {
     setQuestionnaireData(data);
     setCurrentStep(STEPS.IMAGE_UPLOAD);
   };
@@ -131,16 +139,31 @@ export default function SkinAnalysis() {
   return (
     <div className="min-h-screen bg-black">
       <AnimatePresence mode="wait">
-        {currentStep === STEPS.QUESTIONNAIRE && (
+        {currentStep === STEPS.BASIC_INFO && (
           <motion.div
-            key="questionnaire"
+            key="basic_info"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <QuestionnaireForm 
-              onComplete={handleQuestionnaireComplete}
+              onComplete={handleBasicInfoComplete}
               onBack={() => navigate(createPageUrl('Home'))}
+            />
+          </motion.div>
+        )}
+
+        {currentStep === STEPS.DETAILED_QUESTIONNAIRE && (
+          <motion.div
+            key="detailed_questionnaire"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <DetailedQuestionnaire 
+              onComplete={handleDetailedQuestionnaireComplete}
+              onBack={() => setCurrentStep(STEPS.BASIC_INFO)}
+              initialData={basicData}
             />
           </motion.div>
         )}

@@ -12,14 +12,14 @@ const STEPS = [
     description: "Let's start with some basic information to personalize your experience"
   },
   {
-    id: 'skin_profile',
-    title: 'Skin Profile',
-    description: 'Tell us about your skin to help us provide better recommendations'
+    id: 'skin_diet',
+    title: 'Skin & Diet Profile',
+    description: 'Tell us about your skin type and dietary habits'
   },
   {
-    id: 'lifestyle',
-    title: 'Lifestyle',
-    description: 'Your diet can significantly impact your skin health'
+    id: 'location',
+    title: 'Your Location',
+    description: 'Help us understand your environment and air quality'
   }
 ];
 
@@ -32,21 +32,23 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
     age_group: '',
     exact_age: '',
     skin_type: '',
+    diet_type: '',
     allergies: '',
-    diet_type: ''
+    location_city: '',
+    pincode: ''
   });
 
   const step = STEPS[currentStep];
 
   const canProceed = () => {
     if (currentStep === 0) {
-      return data.name && data.email && data.gender && (data.age_group || data.exact_age);
+      return data.name && data.gender && (data.age_group || data.exact_age);
     }
     if (currentStep === 1) {
-      return data.skin_type;
+      return data.skin_type && data.diet_type;
     }
     if (currentStep === 2) {
-      return data.diet_type;
+      return data.location_city;
     }
     return true;
   };
@@ -57,14 +59,7 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
     } else {
       const finalData = {
         ...data,
-        age_group: data.exact_age ? `exact_${data.exact_age}` : data.age_group,
-        concerns: [],
-        sun_exposure: 'moderate',
-        pollution_exposure: 'moderate',
-        sleep_quality: 'average',
-        location_city: '',
-        pincode: '',
-        budget_range: 'mid-range'
+        age_group: data.exact_age ? `exact_${data.exact_age}` : data.age_group
       };
       onComplete(finalData);
     }
@@ -122,17 +117,6 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
                   placeholder="Enter your name"
                   value={data.name}
                   onChange={(e) => setData({ ...data, name: e.target.value })}
-                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
-                />
-              </div>
-
-              <div>
-                <Label className="text-white mb-2 block">Email</Label>
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={data.email}
-                  onChange={(e) => setData({ ...data, email: e.target.value })}
                   className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
                 />
               </div>
@@ -197,7 +181,7 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
             </div>
           )}
 
-          {/* Step 2: Skin Profile */}
+          {/* Step 2: Skin & Diet Profile */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
@@ -226,7 +210,69 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
               </div>
 
               <div>
-                <Label className="text-white mb-2 block">Allergies (optional)</Label>
+                <Label className="text-white mb-3 block">Diet Type</Label>
+                <div className="space-y-3">
+                  {[
+                    { 
+                      value: 'healthy', 
+                      label: 'Healthy',
+                      description: 'Balanced diet with fruits, vegetables, and whole foods'
+                    },
+                    { 
+                      value: 'semi_healthy', 
+                      label: 'Semi-Healthy',
+                      description: 'Mix of healthy foods and occasional processed foods'
+                    },
+                    { 
+                      value: 'junk_food', 
+                      label: 'Junk Food',
+                      description: 'Mostly processed foods, high in sugar and fat'
+                    }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setData({ ...data, diet_type: option.value })}
+                      className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${
+                        data.diet_type === option.value
+                          ? 'bg-pink-500 border-pink-500'
+                          : 'bg-gray-900 border-gray-800'
+                      }`}
+                    >
+                      <p className="font-semibold mb-1">{option.label}</p>
+                      <p className="text-sm text-gray-300">{option.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Location */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <Label className="text-white mb-2 block">City</Label>
+                <Input
+                  placeholder="e.g., Mumbai, Delhi, Bangalore"
+                  value={data.location_city}
+                  onChange={(e) => setData({ ...data, location_city: e.target.value })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+                <p className="text-sm text-gray-400 mt-2">We'll use this to calculate air quality and pollution levels</p>
+              </div>
+
+              <div>
+                <Label className="text-white mb-2 block">Pincode (Optional)</Label>
+                <Input
+                  placeholder="e.g., 400001"
+                  value={data.pincode}
+                  onChange={(e) => setData({ ...data, pincode: e.target.value })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+              </div>
+
+              <div>
+                <Label className="text-white mb-2 block">Allergies (Optional)</Label>
                 <Input
                   placeholder="e.g. fragrance, nuts, latex (comma separate)"
                   value={data.allergies}
@@ -237,8 +283,8 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
             </div>
           )}
 
-          {/* Step 3: Lifestyle */}
-          {currentStep === 2 && (
+          {/* Old Step 3: Lifestyle - REMOVED, now part of previous step */}
+          {false && currentStep === 99 && (
             <div className="space-y-6">
               <div>
                 <Label className="text-white mb-3 block">Diet Type</Label>
