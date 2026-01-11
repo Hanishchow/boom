@@ -1,52 +1,63 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Sparkles, Home, History, Camera } from 'lucide-react';
+import { Home, Camera, Package, ShoppingBag, User } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
-  // Don't show nav on certain pages
   const hideNav = ['SkinAnalysis'].includes(currentPageName);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black text-white">
+      <style>{`
+        body {
+          background-color: #000000;
+          color: #ffffff;
+        }
+      `}</style>
+      
       {children}
       
-      {/* Mobile Bottom Navigation - only show on certain pages */}
       {!hideNav && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe sm:hidden z-50">
-          <div className="flex items-center justify-around py-2">
+        <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 pb-safe z-50">
+          <div className="flex items-center justify-around h-16">
             <Link 
               to={createPageUrl('Home')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                currentPageName === 'Home' 
-                  ? 'text-rose-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className="flex flex-col items-center gap-1 px-4 py-2"
             >
-              <Home className="w-5 h-5" />
-              <span className="text-xs">Home</span>
+              <Home className={`w-6 h-6 ${currentPageName === 'Home' ? 'text-pink-500' : 'text-gray-400'}`} />
+              <span className={`text-xs ${currentPageName === 'Home' ? 'text-pink-500' : 'text-gray-400'}`}>Home</span>
             </Link>
             
             <Link 
               to={createPageUrl('SkinAnalysis')}
               className="flex flex-col items-center gap-1 px-4 py-2"
             >
-              <div className="p-2 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-lg -mt-4">
-                <Camera className="w-6 h-6" />
-              </div>
-              <span className="text-xs text-gray-700">Analyze</span>
+              <Camera className={`w-6 h-6 ${currentPageName === 'SkinAnalysis' ? 'text-pink-500' : 'text-gray-400'}`} />
+              <span className={`text-xs ${currentPageName === 'SkinAnalysis' ? 'text-pink-500' : 'text-gray-400'}`}>Scan</span>
             </Link>
             
             <Link 
-              to={createPageUrl('History')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                currentPageName === 'History' 
-                  ? 'text-rose-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              to={createPageUrl('Products')}
+              className="flex flex-col items-center gap-1 px-4 py-2"
             >
-              <History className="w-5 h-5" />
-              <span className="text-xs">History</span>
+              <Package className={`w-6 h-6 ${currentPageName === 'Products' ? 'text-pink-500' : 'text-gray-400'}`} />
+              <span className={`text-xs ${currentPageName === 'Products' ? 'text-pink-500' : 'text-gray-400'}`}>Products</span>
+            </Link>
+            
+            <Link 
+              to={createPageUrl('Shop')}
+              className="flex flex-col items-center gap-1 px-4 py-2"
+            >
+              <ShoppingBag className={`w-6 h-6 ${currentPageName === 'Shop' ? 'text-pink-500' : 'text-gray-400'}`} />
+              <span className={`text-xs ${currentPageName === 'Shop' ? 'text-pink-500' : 'text-gray-400'}`}>Shop</span>
+            </Link>
+            
+            <Link 
+              to={createPageUrl('Profile')}
+              className="flex flex-col items-center gap-1 px-4 py-2"
+            >
+              <User className={`w-6 h-6 ${currentPageName === 'Profile' ? 'text-pink-500' : 'text-gray-400'}`} />
+              <span className={`text-xs ${currentPageName === 'Profile' ? 'text-pink-500' : 'text-gray-400'}`}>Profile</span>
             </Link>
           </div>
         </nav>

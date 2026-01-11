@@ -1,177 +1,72 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { 
-  ChevronRight, 
-  ChevronLeft, 
-  Droplets, 
-  Sun, 
-  Wind, 
-  Moon, 
-  MapPin, 
-  Wallet,
-  User,
-  Sparkles,
-  AlertCircle
-} from 'lucide-react';
+import { User as UserIcon, Users, Calendar } from 'lucide-react';
 
-const QUESTIONS = [
+const STEPS = [
   {
-    id: 'skin_type',
-    title: 'What is your skin type?',
-    description: 'Select the option that best describes your skin on most days',
-    icon: Droplets,
-    type: 'single',
-    options: [
-      { value: 'dry', label: 'Dry', description: 'Feels tight, may flake, rarely oily' },
-      { value: 'oily', label: 'Oily', description: 'Shiny throughout the day, visible pores' },
-      { value: 'combination', label: 'Combination', description: 'Oily T-zone, dry/normal cheeks' },
-      { value: 'normal', label: 'Normal', description: 'Balanced, rarely too oily or dry' },
-      { value: 'sensitive', label: 'Sensitive', description: 'Easily irritated, reactive to products' }
-    ]
+    id: 'personal',
+    title: 'Personal Information',
+    description: "Let's start with some basic information to personalize your experience"
   },
   {
-    id: 'concerns',
-    title: 'What are your main skin concerns?',
-    description: 'Select all that apply (we\'ll prioritize for you)',
-    icon: Sparkles,
-    type: 'multiple',
-    options: [
-      { value: 'acne', label: 'Acne & Breakouts' },
-      { value: 'pigmentation', label: 'Dark Spots & Pigmentation' },
-      { value: 'dryness', label: 'Dryness & Dehydration' },
-      { value: 'oiliness', label: 'Excess Oil & Shine' },
-      { value: 'sensitivity', label: 'Sensitivity & Redness' },
-      { value: 'aging', label: 'Fine Lines & Aging' },
-      { value: 'texture', label: 'Rough Texture & Bumps' },
-      { value: 'dullness', label: 'Dullness & Uneven Tone' }
-    ]
+    id: 'skin_profile',
+    title: 'Skin Profile',
+    description: 'Tell us about your skin to help us provide better recommendations'
   },
   {
-    id: 'sun_exposure',
-    title: 'How much sun exposure do you get daily?',
-    description: 'Think about your typical day',
-    icon: Sun,
-    type: 'single',
-    options: [
-      { value: 'minimal', label: 'Minimal', description: 'Mostly indoors, less than 1 hour outside' },
-      { value: 'moderate', label: 'Moderate', description: '1-3 hours outside daily' },
-      { value: 'high', label: 'High', description: 'More than 3 hours outside daily' }
-    ]
-  },
-  {
-    id: 'pollution_exposure',
-    title: 'What\'s your pollution exposure level?',
-    description: 'Based on your city and daily commute',
-    icon: Wind,
-    type: 'single',
-    options: [
-      { value: 'low', label: 'Low', description: 'Clean air area, minimal traffic exposure' },
-      { value: 'moderate', label: 'Moderate', description: 'Average city environment' },
-      { value: 'high', label: 'High', description: 'High traffic, industrial area, or metro cities like Delhi' }
-    ]
-  },
-  {
-    id: 'sleep_quality',
-    title: 'How would you rate your sleep quality?',
-    description: 'Sleep affects skin health significantly',
-    icon: Moon,
-    type: 'single',
-    options: [
-      { value: 'poor', label: 'Poor', description: 'Less than 5 hours or very disturbed' },
-      { value: 'average', label: 'Average', description: '5-7 hours, sometimes disturbed' },
-      { value: 'good', label: 'Good', description: '7+ hours of quality sleep' }
-    ]
-  },
-  {
-    id: 'location',
-    title: 'Where do you live?',
-    description: 'Helps us understand your climate and product availability',
-    icon: MapPin,
-    type: 'location',
-    options: []
-  },
-  {
-    id: 'demographics',
-    title: 'A bit about you',
-    description: 'Helps us personalize recommendations',
-    icon: User,
-    type: 'demographics',
-    options: []
-  },
-  {
-    id: 'budget_range',
-    title: 'What\'s your skincare budget?',
-    description: 'Per product, not entire routine',
-    icon: Wallet,
-    type: 'single',
-    options: [
-      { value: 'budget', label: 'Budget-Friendly', description: 'Up to ₹400 per product' },
-      { value: 'mid-range', label: 'Mid-Range', description: '₹400-700 per product' },
-      { value: 'premium', label: 'Premium', description: 'Up to ₹1500 per product' }
-    ]
+    id: 'lifestyle',
+    title: 'Lifestyle',
+    description: 'Your diet can significantly impact your skin health'
   }
 ];
 
 export default function QuestionnaireForm({ onComplete, onBack }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState({
-    skin_type: '',
-    concerns: [],
-    sun_exposure: '',
-    pollution_exposure: '',
-    sleep_quality: '',
-    location_city: '',
-    pincode: '',
-    age_group: '',
+  const [data, setData] = useState({
+    name: '',
+    email: '',
     gender: '',
-    budget_range: ''
+    age_group: '',
+    exact_age: '',
+    skin_type: '',
+    allergies: '',
+    diet_type: ''
   });
 
-  const currentQuestion = QUESTIONS[currentStep];
-  const progress = ((currentStep + 1) / QUESTIONS.length) * 100;
-
-  const handleSingleSelect = (value) => {
-    setAnswers(prev => ({ ...prev, [currentQuestion.id]: value }));
-  };
-
-  const handleMultipleSelect = (value) => {
-    setAnswers(prev => {
-      const current = prev[currentQuestion.id] || [];
-      if (current.includes(value)) {
-        return { ...prev, [currentQuestion.id]: current.filter(v => v !== value) };
-      }
-      return { ...prev, [currentQuestion.id]: [...current, value] };
-    });
-  };
+  const step = STEPS[currentStep];
 
   const canProceed = () => {
-    if (currentQuestion.type === 'single') {
-      return !!answers[currentQuestion.id];
+    if (currentStep === 0) {
+      return data.name && data.email && data.gender && (data.age_group || data.exact_age);
     }
-    if (currentQuestion.type === 'multiple') {
-      return true; // Allow proceeding even with no selections
+    if (currentStep === 1) {
+      return data.skin_type;
     }
-    if (currentQuestion.type === 'location') {
-      return !!answers.location_city;
-    }
-    if (currentQuestion.type === 'demographics') {
-      return !!answers.age_group;
+    if (currentStep === 2) {
+      return data.diet_type;
     }
     return true;
   };
 
   const handleNext = () => {
-    if (currentStep < QUESTIONS.length - 1) {
+    if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      onComplete(answers);
+      const finalData = {
+        ...data,
+        age_group: data.exact_age ? `exact_${data.exact_age}` : data.age_group,
+        concerns: [],
+        sun_exposure: 'moderate',
+        pollution_exposure: 'moderate',
+        sleep_quality: 'average',
+        location_city: '',
+        pincode: '',
+        budget_range: 'mid-range'
+      };
+      onComplete(finalData);
     }
   };
 
@@ -183,213 +78,225 @@ export default function QuestionnaireForm({ onComplete, onBack }) {
     }
   };
 
-  const IconComponent = currentQuestion.icon;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 sm:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex justify-between text-sm text-gray-500 mb-2">
-            <span>Step {currentStep + 1} of {QUESTIONS.length}</span>
-            <span>{Math.round(progress)}% complete</span>
+    <div className="min-h-screen bg-black text-white p-6 pb-24">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-bold mb-2" style={{ color: '#FF69B4' }}>Célure</h1>
+        <p className="text-pink-300 text-sm tracking-widest">SKINCARE, PERFECTED BY AI</p>
+      </div>
+
+      {/* Progress Dots */}
+      <div className="flex justify-center gap-2 mb-8">
+        {STEPS.map((_, idx) => (
+          <div
+            key={idx}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              idx === currentStep ? 'w-8 bg-pink-500' : idx < currentStep ? 'w-2 bg-pink-500' : 'w-2 bg-gray-700'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-2">{step.title}</h2>
+            <p className="text-gray-400 text-sm">{step.description}</p>
           </div>
-          <Progress value={progress} className="h-2 bg-gray-100" />
-        </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100">
-                    <IconComponent className="w-6 h-6 text-rose-600" />
-                  </div>
-                  <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-800">
-                    {currentQuestion.title}
-                  </CardTitle>
+          {/* Step 1: Personal Information */}
+          {currentStep === 0 && (
+            <div className="space-y-6">
+              <div>
+                <Label className="text-white mb-2 block">Name</Label>
+                <Input
+                  placeholder="Enter your name"
+                  value={data.name}
+                  onChange={(e) => setData({ ...data, name: e.target.value })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+              </div>
+
+              <div>
+                <Label className="text-white mb-2 block">Email</Label>
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={data.email}
+                  onChange={(e) => setData({ ...data, email: e.target.value })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+              </div>
+
+              <div>
+                <Label className="text-white mb-3 block">Gender</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'male', label: 'Male', icon: UserIcon },
+                    { value: 'female', label: 'Female', icon: Users },
+                    { value: 'other', label: 'Other', icon: Users }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setData({ ...data, gender: option.value })}
+                      className={`p-4 rounded-2xl border-2 transition-all ${
+                        data.gender === option.value
+                          ? 'bg-pink-500 border-pink-500'
+                          : 'bg-gray-900 border-gray-800'
+                      }`}
+                    >
+                      <option.icon className="w-6 h-6 mx-auto mb-1" />
+                      <p className="text-sm font-medium">{option.label}</p>
+                    </button>
+                  ))}
                 </div>
-                <CardDescription className="text-gray-600">
-                  {currentQuestion.description}
-                </CardDescription>
-              </CardHeader>
+              </div>
 
-              <CardContent className="space-y-4">
-                {/* Single Select */}
-                {currentQuestion.type === 'single' && (
-                  <RadioGroup 
-                    value={answers[currentQuestion.id]} 
-                    onValueChange={handleSingleSelect}
-                    className="space-y-3"
-                  >
-                    {currentQuestion.options.map((option) => (
-                      <label
-                        key={option.value}
-                        className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                          answers[currentQuestion.id] === option.value
-                            ? 'border-rose-400 bg-rose-50/50'
-                            : 'border-gray-100 hover:border-rose-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <RadioGroupItem value={option.value} className="mt-1" />
-                        <div>
-                          <p className="font-medium text-gray-800">{option.label}</p>
-                          {option.description && (
-                            <p className="text-sm text-gray-500 mt-1">{option.description}</p>
-                          )}
-                        </div>
-                      </label>
-                    ))}
-                  </RadioGroup>
-                )}
+              <div>
+                <Label className="text-white mb-3 block">Age</Label>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {[
+                    { value: 'under_20', label: 'Under 18' },
+                    { value: '20_30', label: '18-24' },
+                    { value: '30_40', label: '25-34' },
+                    { value: '40_50', label: '35-44' },
+                    { value: 'above_50', label: '45-54' },
+                    { value: 'above_50', label: '55+' }
+                  ].map((option) => (
+                    <button
+                      key={option.value + option.label}
+                      onClick={() => setData({ ...data, age_group: option.value, exact_age: '' })}
+                      className={`p-3 rounded-xl border-2 transition-all ${
+                        data.age_group === option.value && !data.exact_age
+                          ? 'bg-pink-500 border-pink-500'
+                          : 'bg-gray-900 border-gray-800'
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{option.label}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-center text-gray-400 text-sm my-3">OR</p>
+                <Input
+                  type="number"
+                  placeholder="Enter your exact age"
+                  value={data.exact_age}
+                  onChange={(e) => setData({ ...data, exact_age: e.target.value, age_group: '' })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+              </div>
+            </div>
+          )}
 
-                {/* Multiple Select */}
-                {currentQuestion.type === 'multiple' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {currentQuestion.options.map((option) => {
-                      const isSelected = (answers[currentQuestion.id] || []).includes(option.value);
-                      return (
-                        <label
-                          key={option.value}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                            isSelected
-                              ? 'border-rose-400 bg-rose-50/50'
-                              : 'border-gray-100 hover:border-rose-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <Checkbox 
-                            checked={isSelected}
-                            onCheckedChange={() => handleMultipleSelect(option.value)}
-                          />
-                          <span className="font-medium text-gray-800">{option.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
+          {/* Step 2: Skin Profile */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div>
+                <Label className="text-white mb-3 block">Skin Type</Label>
+                <div className="space-y-3">
+                  {[
+                    { value: 'dry', label: 'Dry' },
+                    { value: 'oily', label: 'Oily' },
+                    { value: 'combination', label: 'Combination' },
+                    { value: 'sensitive', label: 'Sensitive' },
+                    { value: 'normal', label: 'Normal' }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setData({ ...data, skin_type: option.value })}
+                      className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${
+                        data.skin_type === option.value
+                          ? 'bg-pink-500 border-pink-500'
+                          : 'bg-gray-900 border-gray-800'
+                      }`}
+                    >
+                      <p className="font-medium">{option.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                {/* Location Input */}
-                {currentQuestion.type === 'location' && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="city" className="text-gray-700">City</Label>
-                      <Input
-                        id="city"
-                        placeholder="e.g., Mumbai, Delhi, Bangalore"
-                        value={answers.location_city}
-                        onChange={(e) => setAnswers(prev => ({ ...prev, location_city: e.target.value }))}
-                        className="mt-2 border-gray-200 focus:border-rose-400 focus:ring-rose-400"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pincode" className="text-gray-700">Pincode (Optional)</Label>
-                      <Input
-                        id="pincode"
-                        placeholder="e.g., 400001"
-                        value={answers.pincode}
-                        onChange={(e) => setAnswers(prev => ({ ...prev, pincode: e.target.value }))}
-                        className="mt-2 border-gray-200 focus:border-rose-400 focus:ring-rose-400"
-                      />
-                    </div>
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
-                      Used to understand climate and product availability in your area
-                    </p>
-                  </div>
-                )}
+              <div>
+                <Label className="text-white mb-2 block">Allergies (optional)</Label>
+                <Input
+                  placeholder="e.g. fragrance, nuts, latex (comma separate)"
+                  value={data.allergies}
+                  onChange={(e) => setData({ ...data, allergies: e.target.value })}
+                  className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12"
+                />
+              </div>
+            </div>
+          )}
 
-                {/* Demographics */}
-                {currentQuestion.type === 'demographics' && (
-                  <div className="space-y-6">
-                    <div>
-                      <Label className="text-gray-700 mb-3 block">Age Group</Label>
-                      <RadioGroup 
-                        value={answers.age_group} 
-                        onValueChange={(value) => setAnswers(prev => ({ ...prev, age_group: value }))}
-                        className="grid grid-cols-2 sm:grid-cols-3 gap-2"
-                      >
-                        {[
-                          { value: 'under_20', label: 'Under 20' },
-                          { value: '20_30', label: '20-30' },
-                          { value: '30_40', label: '30-40' },
-                          { value: '40_50', label: '40-50' },
-                          { value: 'above_50', label: 'Above 50' }
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all text-center ${
-                              answers.age_group === option.value
-                                ? 'border-rose-400 bg-rose-50/50'
-                                : 'border-gray-100 hover:border-rose-200'
-                            }`}
-                          >
-                            <RadioGroupItem value={option.value} className="sr-only" />
-                            <span className="font-medium text-gray-800">{option.label}</span>
-                          </label>
-                        ))}
-                      </RadioGroup>
-                    </div>
+          {/* Step 3: Lifestyle */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <Label className="text-white mb-3 block">Diet Type</Label>
+                <div className="space-y-3">
+                  {[
+                    { 
+                      value: 'healthy', 
+                      label: 'Healthy',
+                      description: 'Balanced diet with fruits, vegetables, and whole foods'
+                    },
+                    { 
+                      value: 'semi_healthy', 
+                      label: 'Semi-Healthy',
+                      description: 'Mix of healthy foods and occasional processed foods'
+                    },
+                    { 
+                      value: 'junk_food', 
+                      label: 'Junk Food',
+                      description: 'Mostly processed foods, high in sugar and fat'
+                    }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setData({ ...data, diet_type: option.value })}
+                      className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${
+                        data.diet_type === option.value
+                          ? 'bg-pink-500 border-pink-500'
+                          : 'bg-gray-900 border-gray-800'
+                      }`}
+                    >
+                      <p className="font-semibold mb-1">{option.label}</p>
+                      <p className="text-sm text-gray-300">{option.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-                    <div>
-                      <Label className="text-gray-700 mb-3 block">Gender (Optional)</Label>
-                      <RadioGroup 
-                        value={answers.gender} 
-                        onValueChange={(value) => setAnswers(prev => ({ ...prev, gender: value }))}
-                        className="grid grid-cols-2 gap-2"
-                      >
-                        {[
-                          { value: 'female', label: 'Female' },
-                          { value: 'male', label: 'Male' },
-                          { value: 'other', label: 'Other' },
-                          { value: 'prefer_not_to_say', label: 'Prefer not to say' }
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                              answers.gender === option.value
-                                ? 'border-rose-400 bg-rose-50/50'
-                                : 'border-gray-100 hover:border-rose-200'
-                            }`}
-                          >
-                            <RadioGroupItem value={option.value} className="sr-only" />
-                            <span className="text-gray-800">{option.label}</span>
-                          </label>
-                        ))}
-                      </RadioGroup>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </AnimatePresence>
+      {/* Navigation */}
+      <div className="fixed bottom-20 left-0 right-0 px-6 flex gap-3">
+        <Button
+          onClick={handlePrev}
+          variant="outline"
+          className="flex-1 h-14 rounded-full border-2 border-pink-500 text-pink-500 hover:bg-pink-500/10"
+        >
+          Back
+        </Button>
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
-          <Button
-            variant="ghost"
-            onClick={handlePrev}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            Back
-          </Button>
-
-          <Button
-            onClick={handleNext}
-            disabled={!canProceed()}
-            className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-6 disabled:opacity-50"
-          >
-            {currentStep === QUESTIONS.length - 1 ? 'Get My Analysis' : 'Continue'}
-            <ChevronRight className="w-5 h-5 ml-1" />
-          </Button>
-        </div>
+        <Button
+          onClick={handleNext}
+          disabled={!canProceed()}
+          className="flex-1 h-14 rounded-full bg-pink-500 hover:bg-pink-600 text-white disabled:opacity-50 disabled:bg-gray-700"
+        >
+          {currentStep === STEPS.length - 1 ? 'Complete' : 'Next'}
+        </Button>
       </div>
     </div>
   );
