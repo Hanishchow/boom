@@ -129,7 +129,7 @@ export default function SkinAnalysis() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       <AnimatePresence mode="wait">
         {currentStep === STEPS.QUESTIONNAIRE && (
           <motion.div
@@ -166,10 +166,9 @@ export default function SkinAnalysis() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 flex items-center justify-center p-4"
+            className="min-h-screen bg-black flex items-center justify-center p-4"
           >
             <div className="text-center">
-              {/* Animated Logo */}
               <motion.div
                 animate={{ 
                   scale: [1, 1.1, 1],
@@ -180,29 +179,26 @@ export default function SkinAnalysis() {
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-rose-100 to-amber-100 mb-8 shadow-lg"
+                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-pink-500/10 mb-8"
               >
-                <Sparkles className="w-12 h-12 text-rose-500" />
+                <Sparkles className="w-12 h-12 text-pink-500" />
               </motion.div>
 
-              {/* Loading Spinner */}
-              <Loader2 className="w-8 h-8 mx-auto text-rose-500 animate-spin mb-4" />
+              <Loader2 className="w-8 h-8 mx-auto text-pink-500 animate-spin mb-4" />
 
-              {/* Progress Text */}
               <motion.p
                 key={analysisProgress}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-lg font-medium text-gray-800 mb-2"
+                className="text-lg font-medium text-white mb-2"
               >
                 {analysisProgress}
               </motion.p>
 
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-400 text-sm">
                 This may take a few seconds...
               </p>
 
-              {/* Progress Indicators */}
               <div className="flex justify-center gap-2 mt-8">
                 {['Analyzing', 'Profiling', 'Matching', 'Done'].map((step, idx) => (
                   <motion.div
@@ -214,8 +210,8 @@ export default function SkinAnalysis() {
                     }}
                     className={`w-2 h-2 rounded-full ${
                       analysisProgress.toLowerCase().includes(step.toLowerCase()) 
-                        ? 'bg-rose-500' 
-                        : 'bg-gray-300'
+                        ? 'bg-pink-500' 
+                        : 'bg-gray-700'
                     }`}
                   />
                 ))}
