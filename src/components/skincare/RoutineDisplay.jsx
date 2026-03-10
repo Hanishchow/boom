@@ -45,18 +45,18 @@ function RoutineStep({ step, index }) {
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger className="w-full">
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-white border border-gray-100 hover:border-rose-200 transition-all duration-200 hover:shadow-sm">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-rose-100 to-amber-100 text-xl">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-pink-500/30 transition-all duration-200">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-pink-500/10 text-xl">
               {stepIcons[step.product_type] || '•'}
             </div>
             <div className="flex-1 text-left">
-              <p className="font-medium text-gray-800 capitalize">
+              <p className="font-medium text-white capitalize">
                 {step.product_type.replace('_', ' ')}
               </p>
-              <p className="text-sm text-gray-500">{step.purpose}</p>
+              <p className="text-sm text-gray-400">{step.purpose}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs text-gray-500">
+              <Badge variant="outline" className="text-xs text-gray-400 border-gray-700">
                 <Clock className="w-3 h-3 mr-1" />
                 {step.duration}
               </Badge>
@@ -69,48 +69,38 @@ function RoutineStep({ step, index }) {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="mt-2 ml-14 p-4 rounded-xl bg-gray-50 border border-gray-100"
+            className="mt-2 ml-14 p-4 rounded-xl bg-gray-950 border border-gray-800"
           >
             <div className="space-y-4">
-              {/* Instructions */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-blue-500" />
-                  How to use
+                <p className="text-sm font-medium text-blue-400 mb-1 flex items-center gap-2">
+                  <Info className="w-4 h-4" /> How to use
                 </p>
-                <p className="text-sm text-gray-600">{step.instructions}</p>
+                <p className="text-sm text-gray-300">{step.instructions}</p>
               </div>
-
-              {/* Do's */}
               {step.dos && step.dos.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-green-700 mb-2 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Do's
+                  <p className="text-sm font-medium text-green-400 mb-2 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" /> Do's
                   </p>
                   <ul className="space-y-1">
                     {step.dos.map((item, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-green-500 mt-0.5">✓</span>
-                        {item}
+                      <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span>{item}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-
-              {/* Don'ts */}
               {step.donts && step.donts.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-red-700 mb-2 flex items-center gap-2">
-                    <XCircle className="w-4 h-4" />
-                    Don'ts
+                  <p className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
+                    <XCircle className="w-4 h-4" /> Don'ts
                   </p>
                   <ul className="space-y-1">
                     {step.donts.map((item, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-red-500 mt-0.5">✗</span>
-                        {item}
+                      <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                        <span className="text-red-400 mt-0.5">✗</span>{item}
                       </li>
                     ))}
                   </ul>
@@ -130,20 +120,20 @@ function WeeklyTreatment({ treatment, index }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="p-4 rounded-xl bg-white border border-gray-100"
+      className="p-4 rounded-xl bg-gray-900 border border-gray-800"
     >
       <div className="flex items-start justify-between mb-2">
         <div>
-          <p className="font-medium text-gray-800 capitalize">
+          <p className="font-medium text-white capitalize">
             {treatment.treatment_type.replace('_', ' ')}
           </p>
-          <p className="text-sm text-gray-500">{treatment.purpose}</p>
+          <p className="text-sm text-gray-400">{treatment.purpose}</p>
         </div>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
           {treatment.frequency}
         </Badge>
       </div>
-      <p className="text-sm text-gray-600 mt-2">{treatment.instructions}</p>
+      <p className="text-sm text-gray-300 mt-2">{treatment.instructions}</p>
     </motion.div>
   );
 }
@@ -157,27 +147,24 @@ export default function RoutineDisplay({ routine }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
-        <CardHeader className="pb-2 bg-gradient-to-r from-rose-50 to-amber-50">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-rose-500" />
+      <div className="bg-gray-950 border border-gray-800 rounded-3xl overflow-hidden">
+        <div className="p-5 border-b border-gray-800">
+          <h2 className="text-white font-bold text-lg flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-pink-500" />
             Your Personalized Routine
-          </CardTitle>
-        </CardHeader>
+          </h2>
+        </div>
 
-        <CardContent className="p-4">
-          {/* Warnings */}
+        <div className="p-4">
           {ingredient_warnings && ingredient_warnings.length > 0 && (
-            <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="font-medium text-amber-800 flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4" />
-                Important Warnings
+            <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <p className="font-medium text-amber-400 flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4" /> Important Warnings
               </p>
               <ul className="space-y-1">
                 {ingredient_warnings.map((warning, idx) => (
-                  <li key={idx} className="text-sm text-amber-700 flex items-start gap-2">
-                    <span className="mt-0.5">⚠️</span>
-                    {warning}
+                  <li key={idx} className="text-sm text-amber-300 flex items-start gap-2">
+                    <span className="mt-0.5">⚠️</span>{warning}
                   </li>
                 ))}
               </ul>
@@ -185,18 +172,18 @@ export default function RoutineDisplay({ routine }) {
           )}
 
           <Tabs defaultValue="morning" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="morning" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-3 mb-4 bg-gray-900">
+              <TabsTrigger value="morning" className="flex items-center gap-2 data-[state=active]:bg-pink-500 data-[state=active]:text-white text-gray-400">
                 <Sun className="w-4 h-4" />
                 <span className="hidden sm:inline">Morning</span>
                 <span className="sm:hidden">AM</span>
               </TabsTrigger>
-              <TabsTrigger value="evening" className="flex items-center gap-2">
+              <TabsTrigger value="evening" className="flex items-center gap-2 data-[state=active]:bg-pink-500 data-[state=active]:text-white text-gray-400">
                 <Moon className="w-4 h-4" />
                 <span className="hidden sm:inline">Evening</span>
                 <span className="sm:hidden">PM</span>
               </TabsTrigger>
-              <TabsTrigger value="weekly" className="flex items-center gap-2">
+              <TabsTrigger value="weekly" className="flex items-center gap-2 data-[state=active]:bg-pink-500 data-[state=active]:text-white text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Weekly</span>
                 <span className="sm:hidden">Week</span>
@@ -235,8 +222,8 @@ export default function RoutineDisplay({ routine }) {
               </div>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }
