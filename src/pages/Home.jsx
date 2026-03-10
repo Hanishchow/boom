@@ -15,12 +15,16 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const currentUser = await base44.auth.me();
+      const [currentUser, analyses, profiles] = await Promise.all([
+        base44.auth.me(),
+        base44.entities.AnalysisHistory.list('-created_date', 1),
+        base44.entities.SkinProfile.list('-created_date', 1)
+      ]);
       setUser(currentUser);
-
-      const analyses = await base44.entities.AnalysisHistory.list('-created_date', 1);
-      if (analyses.length > 0) {
-        setLatestAnalysis(analyses[0]);
+      if (analyses.length > 0) setLatestAnalysis(analyses[0]);
+      // Use stored name from profile if available
+      if (profiles.length > 0 && profiles[0].name) {
+        setUser(prev => ({ ...prev, full_name: profiles[0].name || prev?.full_name }));
       }
     } catch (err) {
       console.error('Error loading data:', err);

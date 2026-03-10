@@ -13,13 +13,24 @@ export const INDIAN_PHARMACY_PRODUCTS = {
       is_generic: false
     },
     {
-      name: "Simple Kind to Skin Refreshing Facial Wash",
-      brand: "Simple",
-      active_ingredients: ["Pro-Vitamin B5", "Vitamin E"],
-      suitable_for: ["sensitive", "normal", "combination"],
-      addresses: ["sensitivity", "dullness"],
-      price_min: 280,
-      price_max: 400,
+      name: "Foxtale Clarifying Face Wash",
+      brand: "Foxtale",
+      active_ingredients: ["Salicylic Acid 1%", "Niacinamide 2%"],
+      suitable_for: ["oily", "combination", "acne-prone"],
+      addresses: ["acne", "blackheads", "oiliness"],
+      price_min: 449,
+      price_max: 499,
+      availability: "high",
+      is_generic: false
+    },
+    {
+      name: "Mamaearth Ubtan Face Wash",
+      brand: "Mamaearth",
+      active_ingredients: ["Turmeric", "Saffron", "Chickpea"],
+      suitable_for: ["normal", "combination", "dry"],
+      addresses: ["dullness", "uneven_tone", "pigmentation"],
+      price_min: 199,
+      price_max: 299,
       availability: "high",
       is_generic: false
     },
@@ -69,6 +80,28 @@ export const INDIAN_PHARMACY_PRODUCTS = {
     }
   ],
   moisturizers: [
+    {
+      name: "Foxtale Barrier Repair Cream",
+      brand: "Foxtale",
+      active_ingredients: ["Ceramides", "Peptides", "Squalane"],
+      suitable_for: ["dry", "sensitive", "normal", "combination"],
+      addresses: ["dryness", "sensitivity", "barrier repair"],
+      price_min: 749,
+      price_max: 819,
+      availability: "high",
+      is_generic: false
+    },
+    {
+      name: "Mamaearth Aloe Vera Gel Moisturizer",
+      brand: "Mamaearth",
+      active_ingredients: ["Aloe Vera 100%", "Vitamin E"],
+      suitable_for: ["oily", "combination", "sensitive"],
+      addresses: ["oiliness", "redness", "sensitivity"],
+      price_min: 249,
+      price_max: 349,
+      availability: "high",
+      is_generic: false
+    },
     {
       name: "Cetaphil Moisturizing Lotion",
       brand: "Cetaphil",
@@ -138,6 +171,28 @@ export const INDIAN_PHARMACY_PRODUCTS = {
   ],
   sunscreens: [
     {
+      name: "Minimalist SPF 50 PA++++ Sunscreen",
+      brand: "Minimalist",
+      active_ingredients: ["Multi-Vitamin", "Chemical UV filters", "Niacinamide"],
+      suitable_for: ["oily", "combination", "normal"],
+      addresses: ["sun protection", "oiliness"],
+      price_min: 369,
+      price_max: 429,
+      availability: "high",
+      is_generic: false
+    },
+    {
+      name: "Foxtale Waterlight Sunscreen SPF 50",
+      brand: "Foxtale",
+      active_ingredients: ["Chemical filters", "Hyaluronic Acid"],
+      suitable_for: ["all"],
+      addresses: ["sun protection", "hydration"],
+      price_min: 499,
+      price_max: 599,
+      availability: "high",
+      is_generic: false
+    },
+    {
       name: "La Shield Fisico SPF 50",
       brand: "La Shield",
       active_ingredients: ["Zinc Oxide", "Titanium Dioxide"],
@@ -206,13 +261,46 @@ export const INDIAN_PHARMACY_PRODUCTS = {
   ],
   serums: [
     {
+      name: "The Ordinary Niacinamide 10% + Zinc 1%",
+      brand: "The Ordinary",
+      active_ingredients: ["Niacinamide 10%", "Zinc PCA 1%"],
+      suitable_for: ["oily", "combination", "normal"],
+      addresses: ["oiliness", "large_pores", "acne", "excess_oil"],
+      price_min: 699,
+      price_max: 899,
+      availability: "high",
+      is_generic: false
+    },
+    {
+      name: "Mamaearth Vitamin C Face Serum",
+      brand: "Mamaearth",
+      active_ingredients: ["Vitamin C 10%", "Turmeric"],
+      suitable_for: ["normal", "combination", "dry"],
+      addresses: ["dullness", "pigmentation", "hyperpigmentation", "uneven_tone"],
+      price_min: 399,
+      price_max: 499,
+      availability: "high",
+      is_generic: false
+    },
+    {
       name: "Minimalist 10% Niacinamide Serum",
       brand: "Minimalist",
       active_ingredients: ["Niacinamide 10%", "Zinc"],
       suitable_for: ["oily", "combination", "normal"],
-      addresses: ["oiliness", "pores", "acne", "pigmentation"],
+      addresses: ["oiliness", "acne", "pigmentation"],
       price_min: 349,
       price_max: 450,
+      availability: "high",
+      is_generic: false
+    },
+    {
+      name: "Foxtale 10% Vitamin C Serum",
+      brand: "Foxtale",
+      active_ingredients: ["Ethyl Ascorbic Acid 10%", "Ferulic Acid"],
+      suitable_for: ["all"],
+      addresses: ["dullness", "hyperpigmentation", "uneven_tone", "aging"],
+      price_min: 599,
+      price_max: 699,
       availability: "high",
       is_generic: false
     },
