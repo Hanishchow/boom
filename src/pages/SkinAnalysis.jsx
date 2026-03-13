@@ -149,7 +149,7 @@ export default function SkinAnalysis() {
 
       await base44.entities.AnalysisHistory.create({
         profile_id: savedProfile.id,
-        analysis_type: imageUrl ? 'combined' : 'questionnaire',
+        analysis_type: frontImageUrl ? 'combined' : 'questionnaire',
         skin_type_detected: skinProfile.ai_adjusted_skin_type,
         concerns_detected: (skinProfile.ai_detected_concerns || []).map(c => ({
           concern: c.concern,
