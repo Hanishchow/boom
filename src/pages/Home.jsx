@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Package, ChevronRight } from 'lucide-react';
 
 export default function Home() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [latestAnalysis, setLatestAnalysis] = useState(null);
   const [selfieUrl, setSelfieUrl] = useState(null);
