@@ -306,7 +306,7 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                         }>
                             {selected && <span className="text-pink-500 text-xs">✓</span>}
                           </div>
-                          <span className="text-sm font-medium">{opt.label}</span>
+                          <span className="text-xs font-medium leading-tight">{opt.label}</span>
                         </button>);
 
                   })}
