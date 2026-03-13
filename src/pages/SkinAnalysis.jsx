@@ -70,8 +70,10 @@ export default function SkinAnalysis() {
     setCurrentStep(STEPS.IMAGE_UPLOAD);
   };
 
-  const handleImageAnalyzed = async (imageUrl) => {
-    await processAnalysis(questionnaireData, imageUrl);
+  const handleImagesAnalyzed = async (images) => {
+    // images = { front, right, left } — all private URLs
+    // Use front image as primary for AI analysis
+    await processAnalysis(questionnaireData, images);
   };
 
   const handleSkipImage = async () => {
