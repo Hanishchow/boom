@@ -157,7 +157,7 @@ export default function SkinAnalysis() {
           severity: c.severity
         })),
         sensitivity_score: skinProfile.sensitivity_score,
-        image_url: imageUrl || ''
+        image_url: frontImageUrl || ''
       });
 
       // Mark onboarding complete for this user
