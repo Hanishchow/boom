@@ -37,8 +37,10 @@ export default function SkinAnalysis() {
 
   const loadExistingProfile = async () => {
     try {
-      // Try to load latest profile to pre-fill form
-      const profiles = await base44.entities.SkinProfile.list('-created_date', 1);
+      const currentUser = await base44.auth.me();
+      const userName = currentUser?.full_name || currentUser?.email || '';
+      // Try to load THIS user's latest profile to pre-fill form
+      const profiles = await base44.entities.SkinProfile.filter({ created_by: currentUser.email }, '-created_date', 1);
       if (profiles.length > 0) {
         const p = profiles[0];
         setPrefillData({
@@ -147,6 +149,14 @@ export default function SkinAnalysis() {
         sensitivity_score: skinProfile.sensitivity_score,
         image_url: imageUrl || ''
       });
+
+      // Mark onboarding complete for this user
+      try {
+        const currentUser = await base44.auth.me();
+        const userName = currentUser?.full_name || currentUser?.email || '';
+        localStorage.setItem(`onboardingComplete_${userName}`, 'true');
+        localStorage.setItem('currentProfileName', userName);
+      } catch (e) {}
 
       navigate(createPageUrl('Results') + `?profile=${savedProfile.id}`);
 
