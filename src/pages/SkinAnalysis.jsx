@@ -202,8 +202,8 @@ export default function SkinAnalysis() {
 
         {currentStep === STEPS.IMAGE_UPLOAD && (
           <motion.div key="image" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ImageUpload 
-              onImageAnalyzed={handleImageAnalyzed}
+            <SelfieCapture
+              onImagesAnalyzed={handleImagesAnalyzed}
               onSkip={handleSkipImage}
               isAnalyzing={isAnalyzing}
             />
