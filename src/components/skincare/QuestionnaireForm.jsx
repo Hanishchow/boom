@@ -297,7 +297,7 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                       <button
                         key={opt.value}
                         onClick={() => toggleConcern(opt.value)}
-                        className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 text-left ${
+                        className={`p-2 rounded-xl border-2 transition-all flex items-center gap-1.5 text-left min-h-0 ${
                         selected ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'}`
                         }>
 
