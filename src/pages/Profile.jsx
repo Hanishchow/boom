@@ -38,28 +38,45 @@ export default function Profile() {
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center">
-                <User className="w-8 h-8 text-gray-400" />
+              {/* Circular selfie (120dp equiv) */}
+              <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-gray-800 flex items-center justify-center flex-shrink-0 border-2 border-pink-500">
+                {profile?.face_image_url ? (
+                  <img src={profile.face_image_url} alt="Selfie" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-12 h-12 text-gray-400" />
+                )}
               </div>
               <div>
                 <h2 className="text-xl font-semibold">{profile?.name || user?.full_name || 'User'}</h2>
                 <p className="text-sm text-gray-400">{profile?.email || user?.email}</p>
+                {profile?.budget_range && (
+                  <span className="text-xs text-pink-400 mt-1 block capitalize">Budget: {profile.budget_range}</span>
+                )}
               </div>
             </div>
-            <Button variant="ghost" className="text-pink-500 hover:text-pink-400">
-              Edit
-            </Button>
           </div>
 
           {profile && (
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Skin Type</span>
-                <span className="font-medium capitalize">{profile.skin_type}</span>
-              </div>
+              {(profile.skin_types?.length > 0 || profile.skin_type) && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Skin Type(s)</span>
+                  <span className="font-medium capitalize">
+                    {(profile.skin_types?.length > 0 ? profile.skin_types : [profile.skin_type]).join(', ')}
+                  </span>
+                </div>
+              )}
+              {profile.primary_concerns?.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Main Concerns</span>
+                  <span className="font-medium capitalize text-right max-w-[180px]">
+                    {profile.primary_concerns.slice(0,3).map(c => c.replace('_', ' ')).join(', ')}
+                  </span>
+                </div>
+              )}
               {profile.diet_type && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Diet Type</span>
+                  <span className="text-gray-400">Diet</span>
                   <span className="font-medium capitalize">{profile.diet_type.replace('_', ' ')}</span>
                 </div>
               )}
@@ -71,14 +88,20 @@ export default function Profile() {
               )}
               {profile.age_group && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Age</span>
-                  <span className="font-medium">{profile.age_group.replace('_', '-')}</span>
+                  <span className="text-gray-400">Age Group</span>
+                  <span className="font-medium">{profile.age_group.replace(/_/g, '-')}</span>
+                </div>
+              )}
+              {profile.location_city && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">City</span>
+                  <span className="font-medium">{profile.location_city}</span>
                 </div>
               )}
               {profile.allergies && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Allergies</span>
-                  <span className="font-medium">{profile.allergies || 'None'}</span>
+                  <span className="font-medium">{profile.allergies}</span>
                 </div>
               )}
             </div>

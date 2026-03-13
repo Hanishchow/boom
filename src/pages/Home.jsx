@@ -55,11 +55,20 @@ export default function Home() {
       </div>
 
       {/* Greeting */}
-      <div className="px-4 mb-6">
-        <h2 className="text-2xl font-bold mb-1">
-          Hello, <span style={{ color: '#FF69B4' }}>{user?.full_name?.split(' ')[0] || 'there'}!</span>
-        </h2>
-        <p className="text-gray-400">Your personalized skincare journey awaits</p>
+      <div className="px-4 mb-6 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center flex-shrink-0 border-2 border-pink-500">
+          {latestAnalysis?.image_url ? (
+            <img src={latestAnalysis.image_url} alt="You" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl">👤</span>
+          )}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">
+            Hello, <span style={{ color: '#FF69B4' }}>{user?.full_name?.split(' ')[0] || 'there'}!</span>
+          </h2>
+          <p className="text-gray-400 text-sm">Your personalized skincare journey awaits</p>
+        </div>
       </div>
 
       {/* Action Cards */}
