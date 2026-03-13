@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,27 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const [currentUser, analyses, profiles] = await Promise.all([
-        base44.auth.me(),
-        base44.entities.AnalysisHistory.list('-created_date', 1),
-        base44.entities.SkinProfile.list('-created_date', 1)
-      ]);
+      const currentUser = await base44.auth.me();
+      const userName = currentUser?.full_name || currentUser?.email || '';
+
+      // Check if this user has completed onboarding
+      const onboardingKey = `onboardingComplete_${userName}`;
+      const onboardingDone = localStorage.getItem(onboardingKey);
+      if (!onboardingDone) {
+        // First time — redirect to onboarding
+        navigate(createPageUrl('SkinAnalysis'));
+        return;
+      }
+
       setUser(currentUser);
+
+      // Load only THIS user's data (filtered by email)
+      const [analyses, profiles] = await Promise.all([
+        base44.entities.AnalysisHistory.filter({ created_by: currentUser.email }, '-created_date', 1),
+        base44.entities.SkinProfile.filter({ created_by: currentUser.email }, '-created_date', 1)
+      ]);
+
       if (analyses.length > 0) setLatestAnalysis(analyses[0]);
-      // Use stored name from profile if available
       if (profiles.length > 0) {
         if (profiles[0].name) setUser(prev => ({ ...prev, full_name: profiles[0].name || prev?.full_name }));
         if (profiles[0].face_image_url) setSelfieUrl(profiles[0].face_image_url);
