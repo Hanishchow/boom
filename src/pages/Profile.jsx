@@ -19,7 +19,8 @@ export default function Profile() {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
 
-      const profiles = await base44.entities.SkinProfile.list('-created_date', 1);
+      // Load ONLY this user's profile
+      const profiles = await base44.entities.SkinProfile.filter({ created_by: currentUser.email }, '-created_date', 1);
       if (profiles.length > 0) {
         setProfile(profiles[0]);
       }
