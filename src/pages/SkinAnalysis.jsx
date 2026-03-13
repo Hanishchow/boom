@@ -80,18 +80,21 @@ export default function SkinAnalysis() {
     await processAnalysis(questionnaireData, null);
   };
 
-  const processAnalysis = async (qData, imageUrl) => {
+  const processAnalysis = async (qData, images) => {
     setIsAnalyzing(true);
     setCurrentStep(STEPS.ANALYZING);
+
+    // images can be null or { front, right, left }
+    const frontImageUrl = images?.front || null;
 
     try {
       setAnalysisProgress('Analyzing your responses...');
       const questionnaireAnalysis = analyzeQuestionnaire(qData);
 
       let imageAnalysis = null;
-      if (imageUrl) {
+      if (frontImageUrl) {
         setAnalysisProgress('AI scanning your photo...');
-        imageAnalysis = await analyzeImageWithAI(imageUrl, base44.integrations.Core.InvokeLLM);
+        imageAnalysis = await analyzeImageWithAI(frontImageUrl, base44.integrations.Core.InvokeLLM);
       }
 
       setAnalysisProgress('Creating your skin profile...');
