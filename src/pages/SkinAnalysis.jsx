@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Sparkles } from 'lucide-react';
 
 import QuestionnaireForm from '@/components/skincare/QuestionnaireForm';
-import ImageUpload from '@/components/skincare/ImageUpload';
+import SelfieCapture from '@/components/skincare/SelfieCapture';
 import { 
   analyzeQuestionnaire, 
   analyzeImageWithAI, 
