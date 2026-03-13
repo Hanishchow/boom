@@ -116,14 +116,19 @@ export default function SkinAnalysis() {
         email: qData.email || '',
         gender: qData.gender || '',
         age_group: qData.age_group || '',
+        calculated_age: qData.calculated_age || null,
+        dob: qData.dob || '',
         skin_types: qData.skin_types || [],
         diet_type: qData.diet_type || '',
         allergies: qData.allergies || '',
         location_city: qData.location_city || '',
         pincode: qData.pincode || '',
-        budget_amount: qData.budget_amount || 1500,
-        image_analysis_consent: !!imageUrl,
-        face_image_url: imageUrl || '',
+        budget_range: 'mid-range',
+        image_analysis_consent: !!(images?.front),
+        face_image_url: frontImageUrl || '',
+        front_image_url: images?.front || '',
+        right_image_url: images?.right || '',
+        left_image_url: images?.left || '',
         is_complete: true
       };
 
