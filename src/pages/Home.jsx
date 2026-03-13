@@ -8,6 +8,7 @@ import { Camera, Package, ChevronRight } from 'lucide-react';
 export default function Home() {
   const [user, setUser] = useState(null);
   const [latestAnalysis, setLatestAnalysis] = useState(null);
+  const [selfieUrl, setSelfieUrl] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -23,8 +24,9 @@ export default function Home() {
       setUser(currentUser);
       if (analyses.length > 0) setLatestAnalysis(analyses[0]);
       // Use stored name from profile if available
-      if (profiles.length > 0 && profiles[0].name) {
-        setUser(prev => ({ ...prev, full_name: profiles[0].name || prev?.full_name }));
+      if (profiles.length > 0) {
+        if (profiles[0].name) setUser(prev => ({ ...prev, full_name: profiles[0].name || prev?.full_name }));
+        if (profiles[0].face_image_url) setSelfieUrl(profiles[0].face_image_url);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -57,8 +59,8 @@ export default function Home() {
       {/* Greeting */}
       <div className="px-4 mb-6 flex items-center gap-4">
         <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center flex-shrink-0 border-2 border-pink-500">
-          {latestAnalysis?.image_url ? (
-            <img src={latestAnalysis.image_url} alt="You" className="w-full h-full object-cover" />
+          {selfieUrl ? (
+            <img src={selfieUrl} alt="You" className="w-full h-full object-cover" />
           ) : (
             <span className="text-2xl">👤</span>
           )}
