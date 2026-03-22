@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { User, Bell, Moon, Shield, HelpCircle, ChevronRight } from 'lucide-react';
+import DataDeletion from '@/components/security/DataDeletion';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -146,6 +147,11 @@ export default function Profile() {
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
           </div>
+        </div>
+
+        {/* Data deletion */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 mb-4">
+          <DataDeletion />
         </div>
 
         <Button
