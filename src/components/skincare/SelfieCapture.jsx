@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Camera, ChevronLeft, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import ConsentGate from '@/components/security/ConsentGate';
+import { validateImageFile } from '@/lib/inputSanitizer';
+import { logAuditEvent } from '@/lib/auditLogger';
 
 const CAPTURE_STEPS = [
   {
@@ -29,7 +32,7 @@ const CAPTURE_STEPS = [
 ];
 
 export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing }) {
-  const [phase, setPhase] = useState('instructions'); // instructions | capture
+  const [phase, setPhase] = useState('consent'); // consent | instructions | capture
   const [captureStep, setCaptureStep] = useState(0); // 0=front, 1=right, 2=left
   const [captured, setCaptured] = useState({ front: null, right: null, left: null });
   const [uploading, setUploading] = useState(false);
@@ -42,16 +45,28 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { setError('Please select an image file'); return; }
-    if (file.size > 10 * 1024 * 1024) { setError('Image size should be less than 10MB'); return; }
+
+    // Validate via sanitizer
+    const validation = validateImageFile(file);
+    if (!validation.valid) { setError(validation.error); return; }
+
     setError(null);
     setUploading(true);
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadPrivateFile({ file });
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+      // Store private URI (not a public URL) — access via signed URL only
+      const file_url = file_uri;
       const key = currentCapture.id;
       const updated = { ...captured, [key]: file_url };
       setCaptured(updated);
+
+      await logAuditEvent({
+        action: 'selfie_uploaded',
+        resourceType: 'selfie',
+        metadata: { step: key },
+        success: true
+      });
 
       if (captureStep < CAPTURE_STEPS.length - 1) {
         setCaptureStep(captureStep + 1);
@@ -60,6 +75,7 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       setError('Upload failed. Please try again.');
+      await logAuditEvent({ action: 'selfie_uploaded', resourceType: 'selfie', metadata: { step: currentCapture.id }, success: false });
     }
     setUploading(false);
   };
@@ -69,6 +85,15 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
   };
 
   const allCaptured = captured.front && captured.right && captured.left;
+
+  if (phase === 'consent') {
+    return (
+      <ConsentGate
+        onConsent={() => setPhase('instructions')}
+        onDecline={onSkip}
+      />
+    );
+  }
 
   if (phase === 'instructions') {
     return (
