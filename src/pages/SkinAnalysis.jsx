@@ -181,6 +181,11 @@ export default function SkinAnalysis() {
           severity: c.severity
         })),
         sensitivity_score: skinProfile.sensitivity_score,
+        notes: [
+          `Budget: ${budgetData.budget_range} (₹${budgetData.budget_min_inr}–₹${budgetData.budget_max_inr}/mo)`,
+          budgetData.budget_reasoning,
+          skinProfile.climate_zone ? `Climate: ${skinProfile.climate_zone}` : ''
+        ].filter(Boolean).join(' | '),
         image_url: frontImageUrl || ''
       });
 
