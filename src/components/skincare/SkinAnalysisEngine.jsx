@@ -446,7 +446,7 @@ export function getProductRecommendations(skinProfile, routine) {
   const {
     ai_adjusted_skin_type,
     primary_concerns,
-    secondary_concerns,
+    secondary_concerns = [],
     sensitivity_score,
     budget_range,
     climate_zone
@@ -454,23 +454,56 @@ export function getProductRecommendations(skinProfile, routine) {
 
   const recommendations = [];
   const budgetFilter = BUDGET_FILTERS[budget_range] || BUDGET_FILTERS['mid-range'];
-  const climatePrefs = CLIMATE_ADJUSTMENTS[climate_zone] || CLIMATE_ADJUSTMENTS['moderate'];
 
-  // Helper function to find best product
+  // Build a map of routine steps by product_type for consistency validation
+  const routineStepMap = {};
+  [...(routine?.morning_routine || []), ...(routine?.evening_routine || [])].forEach(step => {
+    if (step.product_type) routineStepMap[step.product_type] = step;
+  });
+
+  /**
+   * Core product finder with 3-stage filtering pipeline:
+   * 1. Skin type + budget match
+   * 2. Ingredient safety filter (clean beauty)
+   * 3. Brand quality + concern scoring
+   * Then validates against corresponding routine step.
+   */
   const findBestProduct = (category, productType, usageTime) => {
     const products = INDIAN_PHARMACY_PRODUCTS[category] || [];
-    
-    // Filter by skin type and budget
+    const routineStep = routineStepMap[productType];
+
+    // Stage 1: Skin type + budget filter
     let suitable = products.filter(p => {
-      const skinMatch = p.suitable_for.includes(ai_adjusted_skin_type) || 
+      const skinMatch = p.suitable_for.includes(ai_adjusted_skin_type) ||
                         p.suitable_for.includes('all') ||
                         (sensitivity_score === 'high' && p.suitable_for.includes('sensitive'));
       const budgetMatch = p.price_max <= budgetFilter.max_price;
-      const genericPref = budgetFilter.prefer_generic ? true : !p.is_generic || true;
-      return skinMatch && budgetMatch && genericPref;
+      return skinMatch && budgetMatch;
     });
 
-    // Score by concerns addressed
+    // Stage 2: Ingredient safety filter (clean beauty standards)
+    suitable = suitable.filter(p => isIngredientSafe(p, sensitivity_score));
+
+    // Stage 3: Routine-product consistency check
+    suitable = suitable.filter(p => validateRoutineProductMatch(
+      { ...p, product_type: productType, product_name: p.name },
+      routineStep
+    ));
+
+    // If strict filtering leaves nothing, relax routine match only (safety always holds)
+    if (suitable.length === 0) {
+      suitable = products.filter(p => {
+        const skinMatch = p.suitable_for.includes(ai_adjusted_skin_type) ||
+                          p.suitable_for.includes('all') ||
+                          (sensitivity_score === 'high' && p.suitable_for.includes('sensitive'));
+        const budgetMatch = p.price_max <= budgetFilter.max_price;
+        return skinMatch && budgetMatch && isIngredientSafe(p, sensitivity_score);
+      });
+    }
+
+    if (suitable.length === 0) return null;
+
+    // Score: concern match + brand quality + availability + generic preference
     suitable = suitable.map(p => {
       let score = 0;
       primary_concerns.forEach(c => {
@@ -479,19 +512,18 @@ export function getProductRecommendations(skinProfile, routine) {
       secondary_concerns.forEach(c => {
         if (p.addresses.some(a => a.toLowerCase().includes(c.toLowerCase()))) score += 1;
       });
+      score += getBrandQualityScore(p.brand);           // clean brand bonus
+      if (p.availability === 'high') score += 1;
       if (budgetFilter.prefer_generic && p.is_generic) score += 1;
-      if (p.availability === 'high') score += 2;
       return { ...p, score };
     });
 
-    // Sort by score
     suitable.sort((a, b) => b.score - a.score);
-
-    if (suitable.length === 0) return null;
 
     const best = suitable[0];
     return {
       product_type: productType,
+      routine_step: productType,
       product_name: best.name,
       brand: best.brand,
       active_ingredients: best.active_ingredients,
@@ -506,17 +538,19 @@ export function getProductRecommendations(skinProfile, routine) {
     };
   };
 
-  // Get products for each routine step
+  // --- Build recommendations aligned to each routine step ---
+
+  // Cleanser (both AM + PM)
   const cleanserRec = findBestProduct('cleansers', 'cleanser', 'both');
   if (cleanserRec) recommendations.push(cleanserRec);
 
-  // Toner for oily/combination
+  // Toner (oily / combination only)
   if (ai_adjusted_skin_type === 'oily' || ai_adjusted_skin_type === 'combination') {
     const tonerRec = findBestProduct('toners', 'toner', 'both');
     if (tonerRec) recommendations.push(tonerRec);
   }
 
-  // Serum based on concerns
+  // Serum (matched to top primary concern)
   const serumRec = findBestProduct('serums', 'serum', 'both');
   if (serumRec) recommendations.push(serumRec);
 
@@ -524,17 +558,17 @@ export function getProductRecommendations(skinProfile, routine) {
   const moisturizerRec = findBestProduct('moisturizers', 'moisturizer', 'both');
   if (moisturizerRec) recommendations.push(moisturizerRec);
 
-  // Sunscreen - MANDATORY
+  // Sunscreen (mandatory, AM only)
   const sunscreenRec = findBestProduct('sunscreens', 'sunscreen', 'morning');
   if (sunscreenRec) recommendations.push(sunscreenRec);
 
-  // Spot treatment for acne
-  if (primary_concerns.includes('acne')) {
+  // Spot treatment (acne concerns only)
+  if (primary_concerns.includes('acne') || primary_concerns.includes('acne marks')) {
     const spotRec = findBestProduct('spot_treatments', 'spot_treatment', 'evening');
     if (spotRec) recommendations.push(spotRec);
   }
 
-  // Exfoliator for non-sensitive skin
+  // Exfoliator (non-sensitive only, weekly)
   if (sensitivity_score !== 'high') {
     const exfoliatorRec = findBestProduct('exfoliators', 'exfoliator', 'weekly');
     if (exfoliatorRec) recommendations.push(exfoliatorRec);
