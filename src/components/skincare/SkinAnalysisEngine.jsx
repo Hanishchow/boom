@@ -560,6 +560,56 @@ function generateWhyText(product, concerns, skinType) {
   return text;
 }
 
+// Derive budget from user profile (AI-driven, not user input)
+export function deriveBudget(qData, skinProfile) {
+  const { age_group, diet_type, location_city, primary_concerns = [] } = qData;
+  const { sensitivity_score, climate_zone } = skinProfile;
+
+  // Score-based budget derivation
+  let score = 0;
+
+  // Age: older users tend to need more actives (anti-aging serums etc)
+  if (age_group === '40_50' || age_group === 'above_50') score += 2;
+  else if (age_group === '30_40') score += 1;
+
+  // Concerns: more/complex concerns = higher spend
+  if (primary_concerns.length >= 4) score += 2;
+  else if (primary_concerns.length >= 2) score += 1;
+
+  // Sensitivity: sensitive skin requires gentler (often pricier) formulations
+  if (sensitivity_score === 'high') score += 1;
+
+  // Metro cities tend to correlate with higher purchasing power
+  const metroCities = ['mumbai', 'delhi', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'chennai'];
+  const cityLower = (location_city || '').toLowerCase();
+  if (metroCities.includes(cityLower)) score += 1;
+
+  // Diet: healthy diet users tend to invest more in skincare
+  if (diet_type === 'healthy') score += 1;
+
+  // Derive tier
+  let budget_range, budget_min_inr, budget_max_inr, budget_reasoning;
+
+  if (score <= 2) {
+    budget_range = 'budget';
+    budget_min_inr = 500;
+    budget_max_inr = 1200;
+    budget_reasoning = 'Entry-level routine optimized for effective, affordable pharmacy-grade products.';
+  } else if (score <= 5) {
+    budget_range = 'mid-range';
+    budget_min_inr = 1200;
+    budget_max_inr = 2500;
+    budget_reasoning = 'Balanced routine with proven actives across trusted Indian and global brands.';
+  } else {
+    budget_range = 'premium';
+    budget_min_inr = 2500;
+    budget_max_inr = 5000;
+    budget_reasoning = 'Advanced routine with clinical-grade actives suited for your skin complexity and lifestyle.';
+  }
+
+  return { budget_range, budget_min_inr, budget_max_inr, budget_reasoning };
+}
+
 // Check for ingredient conflicts in recommendations
 export function validateSafetyRules(recommendations) {
   const warnings = [];
