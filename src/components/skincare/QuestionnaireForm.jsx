@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft } from 'lucide-react';
+import { sanitizeQuestionnaireData } from '@/lib/inputSanitizer';
 
 const SKIN_TYPES = [
   { value: 'dry', label: 'Dry', desc: 'Tight, flaky, dull' },
@@ -111,15 +112,16 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
       setCurrentStep((prev) => prev + 1);
     } else {
       const age = calcAge(data.dob);
+      const sanitized = sanitizeQuestionnaireData(data);
       onComplete({
-        ...data,
+        ...sanitized,
         exact_age: age,
         age_group: ageToGroup(age),
         calculated_age: age,
         budget_range: 'mid-range',
         budget_amount: 1500,
-        primary_concerns: data.concerns.slice(0, 3),
-        secondary_concerns: data.concerns.slice(3)
+        primary_concerns: sanitized.concerns.slice(0, 3),
+        secondary_concerns: sanitized.concerns.slice(3)
       });
     }
   };
