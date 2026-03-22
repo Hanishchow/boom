@@ -16,6 +16,7 @@ import {
   validateSafetyRules,
   deriveBudget
 } from '@/components/skincare/SkinAnalysisEngine';
+import { logAuditEvent } from '@/lib/auditLogger';
 
 const STEPS = {
   LOADING: 'loading',
@@ -113,6 +114,7 @@ export default function SkinAnalysis() {
       const budgetData = deriveBudget(qData, skinProfile);
 
       setAnalysisProgress('Saving your profile...');
+      await logAuditEvent({ action: 'analysis_completed', resourceType: 'SkinProfile', metadata: { has_image: !!(images?.front) }, success: true });
 
       // Get user_id for linking records
       let userId = '';
@@ -197,6 +199,7 @@ export default function SkinAnalysis() {
         localStorage.setItem('currentProfileName', userName);
       } catch (e) {}
 
+      await logAuditEvent({ action: 'profile_created', resourceType: 'SkinProfile', resourceId: savedProfile.id, success: true });
       navigate(createPageUrl('Results') + `?profile=${savedProfile.id}`);
 
     } catch (error) {
