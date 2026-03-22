@@ -13,7 +13,8 @@ import {
   synthesizeSkinProfile,
   generateRoutine,
   getProductRecommendations,
-  validateSafetyRules
+  validateSafetyRules,
+  deriveBudget
 } from '@/components/skincare/SkinAnalysisEngine';
 
 const STEPS = {
