@@ -645,15 +645,15 @@ export function deriveBudget(qData, skinProfile) {
   return { budget_range, budget_min_inr, budget_max_inr, budget_reasoning };
 }
 
-// Check for ingredient conflicts in recommendations
-export function validateSafetyRules(recommendations) {
+// Check for ingredient conflicts in recommendations + run consistency validation
+export function validateSafetyRules(recommendations, routine = null) {
   const warnings = [];
   const ingredients = recommendations.flatMap(r => r.active_ingredients || []);
 
+  // Ingredient conflict checks
   INGREDIENT_CONFLICTS.forEach(conflict => {
     const has1 = ingredients.some(i => i.toLowerCase().includes(conflict.ingredient1.toLowerCase()));
     const has2 = ingredients.some(i => i.toLowerCase().includes(conflict.ingredient2.toLowerCase()));
-    
     if (has1 && has2) {
       warnings.push({
         type: 'ingredient_conflict',
@@ -663,6 +663,20 @@ export function validateSafetyRules(recommendations) {
       });
     }
   });
+
+  // Routine-product consistency validation (if routine provided)
+  if (routine) {
+    const consistencyIssues = runConsistencyValidation(recommendations, routine);
+    consistencyIssues.forEach(issue => {
+      if (issue.type === 'ingredient_conflict') {
+        warnings.push({
+          type: 'ingredient_conflict',
+          reason: issue.note,
+          recommendation: issue.note
+        });
+      }
+    });
+  }
 
   return warnings;
 }
