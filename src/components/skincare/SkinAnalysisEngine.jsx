@@ -1,5 +1,6 @@
 // AI Skin Analysis Engine - Questionnaire + Image Analysis Logic
 import { INDIAN_PHARMACY_PRODUCTS, INGREDIENT_CONFLICTS, CLIMATE_ADJUSTMENTS, BUDGET_FILTERS } from './ProductDatabase';
+import { isIngredientSafe, getBrandQualityScore, validateRoutineProductMatch, runConsistencyValidation } from './IngredientSafetyFilter';
 
 // Skin concern mappings
 const CONCERN_WEIGHTS = {
