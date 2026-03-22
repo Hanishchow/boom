@@ -109,27 +109,50 @@ export default function SkinAnalysis() {
 
       const safetyWarnings = validateSafetyRules(products);
 
+      // Derive budget from profile — AI-driven, not user-entered
+      const budgetData = deriveBudget(qData, skinProfile);
+
       setAnalysisProgress('Saving your profile...');
-      
+
+      // Get user_id for linking records
+      let userId = '';
+      try {
+        const currentUser = await base44.auth.me();
+        userId = currentUser?.id || currentUser?.email || '';
+      } catch (e) {}
+
       const profileData = {
-        ...skinProfile,
+        // Identity
+        user_id: userId,
         name: qData.name || '',
         email: qData.email || '',
+        dob: qData.dob || '',
+        calculated_age: qData.calculated_age || null,
         gender: qData.gender || '',
         age_group: qData.age_group || '',
-        calculated_age: qData.calculated_age || null,
-        dob: qData.dob || '',
+        // Skin data
+        ...skinProfile,
         skin_types: qData.skin_types || [],
         diet_type: qData.diet_type || '',
         allergies: qData.allergies || '',
+        // Location
         location_city: qData.location_city || '',
         pincode: qData.pincode || '',
-        budget_range: 'mid-range',
+        // AI-derived budget (never manually set)
+        budget_range: budgetData.budget_range,
+        budget_min_inr: budgetData.budget_min_inr,
+        budget_max_inr: budgetData.budget_max_inr,
+        budget_reasoning: budgetData.budget_reasoning,
+        // Image references (private storage)
         image_analysis_consent: !!(images?.front),
         face_image_url: frontImageUrl || '',
         front_image_url: images?.front || '',
         right_image_url: images?.right || '',
         left_image_url: images?.left || '',
+        // AI image assessment extras
+        overall_skin_condition: imageAnalysis?.overall_skin_assessment?.overall_condition || '',
+        hydration_level: imageAnalysis?.overall_skin_assessment?.hydration_level || '',
+        analysis_confidence: imageAnalysis?.analysis_confidence || null,
         is_complete: true
       };
 
