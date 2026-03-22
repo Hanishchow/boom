@@ -107,7 +107,7 @@ export default function SkinAnalysis() {
       setAnalysisProgress('Finding perfect products...');
       const products = getProductRecommendations(skinProfile, routine);
 
-      const safetyWarnings = validateSafetyRules(products);
+      const safetyWarnings = validateSafetyRules(products, routine);
 
       // Derive budget from profile — AI-driven, not user-entered
       const budgetData = deriveBudget(qData, skinProfile);
