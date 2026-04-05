@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AdminSelfies from './pages/AdminSelfies';
 import AdminDashboard from './pages/AdminDashboard';
+import Selfies from './pages/Selfies';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
       ))}
       <Route path="/AdminSelfies" element={<AdminSelfies />} />
       <Route path="/AdminDashboard" element={<AdminDashboard />} />
+      <Route path="/Selfies" element={<Selfies />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
