@@ -1,0 +1,97 @@
+{
+  "name": "AnalysisHistory",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Reference to skin profile"
+    },
+    "analysis_type": {
+      "type": "string",
+      "enum": [
+        "questionnaire",
+        "image",
+        "combined"
+      ],
+      "description": "Type of analysis performed"
+    },
+    "skin_type_detected": {
+      "type": "string",
+      "description": "Skin type from this analysis"
+    },
+    "concerns_detected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "concern": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "severity": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Concerns detected"
+    },
+    "sensitivity_score": {
+      "type": "string",
+      "description": "Sensitivity level"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Image URL if image analysis"
+    }
+  },
+  "required": [
+    "analysis_type"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
