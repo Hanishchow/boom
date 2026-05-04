@@ -1,0 +1,162 @@
+{
+  "name": "SkincareRoutine",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Reference to skin profile"
+    },
+    "morning_routine": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_number": {
+            "type": "number"
+          },
+          "product_type": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "dos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "donts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Morning skincare routine steps"
+    },
+    "evening_routine": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_number": {
+            "type": "number"
+          },
+          "product_type": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "dos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "donts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Evening skincare routine steps"
+    },
+    "weekly_routine": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string"
+          },
+          "treatment_type": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Weekly treatments"
+    },
+    "ingredient_warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ingredient conflict warnings"
+    },
+    "generated_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When routine was generated"
+    }
+  },
+  "required": [
+    "profile_id"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
