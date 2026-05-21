@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AdminSelfies from './pages/AdminSelfies';
 import AdminDashboard from './pages/AdminDashboard';
 import Selfies from './pages/Selfies';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -64,6 +66,8 @@ const AuthenticatedApp = () => {
       <Route path="/AdminSelfies" element={<AdminSelfies />} />
       <Route path="/AdminDashboard" element={<AdminDashboard />} />
       <Route path="/Selfies" element={<Selfies />} />
+      <Route path="/About" element={<LayoutWrapper currentPageName="About"><About /></LayoutWrapper>} />
+      <Route path="/Contact" element={<LayoutWrapper currentPageName="Contact"><Contact /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

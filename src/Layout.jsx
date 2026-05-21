@@ -3,6 +3,15 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Home, Camera, Package, ShoppingBag, User } from 'lucide-react';
 
+function Footer() {
+  return (
+    <div className="flex items-center justify-center gap-6 py-3 bg-black border-t border-gray-800 text-xs text-gray-500 mb-16">
+      <Link to="/About" className="hover:text-pink-400 transition-colors">About</Link>
+      <Link to="/Contact" className="hover:text-pink-400 transition-colors">Contact</Link>
+    </div>
+  );
+}
+
 export default function Layout({ children, currentPageName }) {
   const hideNav = ['SkinAnalysis'].includes(currentPageName);
 
@@ -17,6 +26,8 @@ export default function Layout({ children, currentPageName }) {
       
       {children}
       
+      <Footer />
+
       {!hideNav && (
         <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 pb-safe z-50">
           <div className="flex items-center justify-around h-16">
