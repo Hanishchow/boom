@@ -1,0 +1,291 @@
+{
+  "name": "SkinProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Unique user identifier (from auth system)"
+    },
+    "name": {
+      "type": "string",
+      "description": "User's full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "User's email address"
+    },
+    "dob": {
+      "type": "string",
+      "description": "Date of birth (YYYY-MM-DD)"
+    },
+    "calculated_age": {
+      "type": "number",
+      "description": "Age calculated from DOB"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other",
+        "prefer_not_to_say"
+      ],
+      "description": "Gender"
+    },
+    "age_group": {
+      "type": "string",
+      "enum": [
+        "under_20",
+        "20_30",
+        "30_40",
+        "40_50",
+        "above_50"
+      ],
+      "description": "Age group derived from DOB"
+    },
+    "skin_type": {
+      "type": "string",
+      "enum": [
+        "dry",
+        "oily",
+        "combination",
+        "normal",
+        "sensitive"
+      ],
+      "description": "User's self-reported primary skin type"
+    },
+    "skin_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "All self-reported skin types (supports multi-select)"
+    },
+    "ai_adjusted_skin_type": {
+      "type": "string",
+      "enum": [
+        "dry",
+        "oily",
+        "combination",
+        "normal",
+        "sensitive"
+      ],
+      "description": "AI-adjusted skin type based on image + questionnaire analysis"
+    },
+    "primary_concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Top 1-3 skin concerns (ordered by priority)"
+    },
+    "secondary_concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional skin concerns"
+    },
+    "ai_detected_concerns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "concern": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "AI-detected skin concerns from image analysis with confidence scores"
+    },
+    "sensitivity_score": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Overall skin sensitivity level"
+    },
+    "allergies": {
+      "type": "string",
+      "description": "Known ingredient allergies (comma-separated)"
+    },
+    "diet_type": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "semi_healthy",
+        "junk_food"
+      ],
+      "description": "User's diet type"
+    },
+    "sun_exposure": {
+      "type": "string",
+      "enum": [
+        "minimal",
+        "moderate",
+        "high"
+      ],
+      "description": "Daily sun exposure level"
+    },
+    "pollution_exposure": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "description": "Pollution exposure level (inferred from city)"
+    },
+    "sleep_quality": {
+      "type": "string",
+      "enum": [
+        "poor",
+        "average",
+        "good"
+      ],
+      "description": "Sleep quality"
+    },
+    "location_city": {
+      "type": "string",
+      "description": "User's city"
+    },
+    "pincode": {
+      "type": "string",
+      "description": "User's pincode"
+    },
+    "climate_zone": {
+      "type": "string",
+      "description": "Inferred climate zone based on city"
+    },
+    "budget_range": {
+      "type": "string",
+      "enum": [
+        "budget",
+        "mid-range",
+        "premium"
+      ],
+      "description": "AI-derived budget tier based on user profile"
+    },
+    "budget_min_inr": {
+      "type": "number",
+      "description": "AI-derived minimum monthly budget in INR"
+    },
+    "budget_max_inr": {
+      "type": "number",
+      "description": "AI-derived maximum monthly budget in INR"
+    },
+    "budget_reasoning": {
+      "type": "string",
+      "description": "Explanation of how AI derived the budget"
+    },
+    "image_analysis_consent": {
+      "type": "boolean",
+      "description": "User consent for image-based AI analysis"
+    },
+    "face_image_url": {
+      "type": "string",
+      "description": "Primary face image URL (front view, private storage)"
+    },
+    "front_image_url": {
+      "type": "string",
+      "description": "Front-facing selfie URL (private storage: /selfies/front.jpg)"
+    },
+    "right_image_url": {
+      "type": "string",
+      "description": "Right profile selfie URL (private storage: /selfies/right_profile.jpg)"
+    },
+    "left_image_url": {
+      "type": "string",
+      "description": "Left profile selfie URL (private storage: /selfies/left_profile.jpg)"
+    },
+    "overall_skin_condition": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "minor_concerns",
+        "needs_attention"
+      ],
+      "description": "AI-assessed overall skin condition"
+    },
+    "hydration_level": {
+      "type": "string",
+      "enum": [
+        "dehydrated",
+        "adequate",
+        "well_hydrated"
+      ],
+      "description": "AI-assessed skin hydration level"
+    },
+    "analysis_confidence": {
+      "type": "number",
+      "description": "Overall AI analysis confidence score (0-100)"
+    },
+    "is_complete": {
+      "type": "boolean",
+      "description": "Whether the profile has completed the full onboarding flow"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional profile description or notes"
+    }
+  },
+  "required": [
+    "skin_type"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

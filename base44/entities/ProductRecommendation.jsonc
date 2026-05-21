@@ -1,0 +1,144 @@
+{
+  "name": "ProductRecommendation",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Reference to skin profile"
+    },
+    "routine_step": {
+      "type": "string",
+      "description": "Which routine step this is for"
+    },
+    "product_type": {
+      "type": "string",
+      "enum": [
+        "cleanser",
+        "toner",
+        "serum",
+        "moisturizer",
+        "sunscreen",
+        "exfoliator",
+        "mask",
+        "eye_cream",
+        "lip_balm",
+        "spot_treatment"
+      ],
+      "description": "Type of product"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Name of the product"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Brand name"
+    },
+    "active_ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key active ingredients"
+    },
+    "why_recommended": {
+      "type": "string",
+      "description": "Reason for recommendation"
+    },
+    "price_range_min": {
+      "type": "number",
+      "description": "Minimum price in INR"
+    },
+    "price_range_max": {
+      "type": "number",
+      "description": "Maximum price in INR"
+    },
+    "availability_confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "description": "How likely to find in local pharmacy"
+    },
+    "suitable_for_skin_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Skin types this product suits"
+    },
+    "addresses_concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Concerns this product addresses"
+    },
+    "usage_time": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "evening",
+        "both",
+        "weekly"
+      ],
+      "description": "When to use"
+    },
+    "is_pharmacy_generic": {
+      "type": "boolean",
+      "description": "Whether this is a pharmacy generic"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional product description or additional notes"
+    }
+  },
+  "required": [
+    "product_name",
+    "product_type"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

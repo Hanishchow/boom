@@ -1,0 +1,77 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID who performed the action"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User email (for admin auditing)"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "profile_created",
+        "profile_updated",
+        "selfie_uploaded",
+        "analysis_completed",
+        "data_deleted",
+        "consent_granted",
+        "consent_denied",
+        "results_viewed",
+        "login_detected"
+      ],
+      "description": "Action performed"
+    },
+    "resource_type": {
+      "type": "string",
+      "description": "Entity or resource type affected"
+    },
+    "resource_id": {
+      "type": "string",
+      "description": "ID of the affected resource"
+    },
+    "metadata": {
+      "type": "string",
+      "description": "JSON string of additional context (sanitized, no PII)"
+    },
+    "ip_hint": {
+      "type": "string",
+      "description": "Partial identifier for session tracking (non-identifying)"
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether the action succeeded"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional human-readable description of the audit event"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

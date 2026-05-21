@@ -113,6 +113,11 @@
       "type": "string",
       "format": "date",
       "description": "When routine was generated"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional routine description or notes"
     }
   },
   "required": [
