@@ -7,6 +7,15 @@ import ConsentGate from '@/components/security/ConsentGate';
 import { validateImageFile } from '@/lib/inputSanitizer';
 import { logAuditEvent } from '@/lib/auditLogger';
 
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 const CAPTURE_STEPS = [
   {
     id: 'front',
@@ -55,10 +64,11 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
 
     try {
       const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-      // Store private URI (not a public URL) — access via signed URL only
+      // Store private URI and base64 data for backend function analysis
       const file_url = file_uri;
+      const data_url = await readFileAsDataURL(file);
       const key = currentCapture.id;
-      const updated = { ...captured, [key]: file_url };
+      const updated = { ...captured, [key]: { url: file_url, data: data_url } };
       setCaptured(updated);
 
       await logAuditEvent({

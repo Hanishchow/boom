@@ -9,7 +9,6 @@ import QuestionnaireForm from '@/components/skincare/QuestionnaireForm';
 import SelfieCapture from '@/components/skincare/SelfieCapture';
 import { 
   analyzeQuestionnaire, 
-  analyzeImageWithAI, 
   synthesizeSkinProfile,
   generateRoutine,
   getProductRecommendations,
@@ -73,8 +72,7 @@ export default function SkinAnalysis() {
   };
 
   const handleImagesAnalyzed = async (images) => {
-    // images = { front, right, left } — all private URLs
-    // Use front image as primary for AI analysis
+    // images = { front: {url, data}, right: {url, data}, left: {url, data} }
     await processAnalysis(questionnaireData, images);
   };
 
@@ -86,17 +84,26 @@ export default function SkinAnalysis() {
     setIsAnalyzing(true);
     setCurrentStep(STEPS.ANALYZING);
 
-    // images can be null or { front, right, left }
-    const frontImageUrl = images?.front || null;
+    const frontImageUrl = images?.front?.url || null;
 
     try {
       setAnalysisProgress('Analyzing your responses...');
       const questionnaireAnalysis = analyzeQuestionnaire(qData);
 
       let imageAnalysis = null;
-      if (frontImageUrl) {
-        setAnalysisProgress('AI scanning your photo...');
-        imageAnalysis = await analyzeImageWithAI(frontImageUrl, base44.integrations.Core.InvokeLLM);
+      if (images?.front?.data) {
+        setAnalysisProgress('AI scanning your photos...');
+        try {
+          const result = await base44.functions.invoke('analyze-skin', {
+            frontImage: images.front.data,
+            rightImage: images.right?.data || null,
+            leftImage: images.left?.data || null
+          });
+          imageAnalysis = result?.detected_concerns ? result : null;
+        } catch (invokeErr) {
+          console.error('Claude analysis failed, falling back to questionnaire-only:', invokeErr);
+          imageAnalysis = null;
+        }
       }
 
       setAnalysisProgress('Creating your skin profile...');
@@ -146,11 +153,11 @@ export default function SkinAnalysis() {
         budget_max_inr: budgetData.budget_max_inr,
         budget_reasoning: budgetData.budget_reasoning,
         // Image references (private storage)
-        image_analysis_consent: !!(images?.front),
+        image_analysis_consent: !!(images?.front?.url),
         face_image_url: frontImageUrl || '',
-        front_image_url: images?.front || '',
-        right_image_url: images?.right || '',
-        left_image_url: images?.left || '',
+        front_image_url: images?.front?.url || '',
+        right_image_url: images?.right?.url || '',
+        left_image_url: images?.left?.url || '',
         // AI image assessment extras
         overall_skin_condition: imageAnalysis?.overall_skin_assessment?.overall_condition || '',
         hydration_level: imageAnalysis?.overall_skin_assessment?.hydration_level || '',
