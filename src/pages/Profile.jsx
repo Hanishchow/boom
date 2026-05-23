@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Link } from 'react-router-dom';
 import { User, Bell, Moon, Shield, HelpCircle, ChevronRight } from 'lucide-react';
 import DataDeletion from '@/components/security/DataDeletion';
 
@@ -131,13 +132,13 @@ export default function Profile() {
               <Switch checked={darkMode} onCheckedChange={setDarkMode} />
             </div>
 
-            <button className="flex items-center justify-between w-full py-3 border-b border-gray-800">
+            <Link to="/PrivacyPolicy" className="flex items-center justify-between w-full py-3 border-b border-gray-800">
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-gray-400" />
                 <span>Privacy Policy</span>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
+            </Link>
 
             <button className="flex items-center justify-between w-full py-3">
               <div className="flex items-center gap-3">

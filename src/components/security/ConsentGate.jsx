@@ -7,14 +7,31 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Lock, Eye, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 import { logAuditEvent } from '@/lib/auditLogger';
 
 export default function ConsentGate({ onConsent, onDecline }) {
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const persistConsent = async (granted) => {
+    try {
+      const user = await base44.auth.me();
+      await base44.entities.UserConsent.create({
+        user_id: user?.id || user?.email || '',
+        consent_type: 'image_analysis',
+        granted,
+        granted_at: new Date().toISOString(),
+        consent_version: '1.0'
+      });
+    } catch (err) {
+      console.error('Failed to persist consent:', err);
+    }
+  };
+
   const handleGrant = async () => {
     setSubmitting(true);
+    await persistConsent(true);
     await logAuditEvent({
       action: 'consent_granted',
       resourceType: 'selfie',
@@ -25,6 +42,7 @@ export default function ConsentGate({ onConsent, onDecline }) {
   };
 
   const handleDecline = async () => {
+    await persistConsent(false);
     await logAuditEvent({
       action: 'consent_denied',
       resourceType: 'selfie',

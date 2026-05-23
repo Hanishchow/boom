@@ -52,6 +52,7 @@ import History from './pages/History';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import Profile from './pages/Profile';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Results from './pages/Results';
 import Shop from './pages/Shop';
 import SkinAnalysis from './pages/SkinAnalysis';
@@ -62,6 +63,7 @@ export const PAGES = {
     "Analysis": Analysis,
     "History": History,
     "Home": Home,
+    "PrivacyPolicy": PrivacyPolicy,
     "Products": Products,
     "Profile": Profile,
     "Results": Results,

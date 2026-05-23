@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { logAuditEvent } from '@/lib/auditLogger';
 
 const AuthContext = createContext();
 
@@ -95,6 +96,14 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+
+      logAuditEvent({
+        action: 'login_detected',
+        resourceType: 'session',
+        userId: currentUser?.email || currentUser?.id,
+        metadata: {},
+        success: true
+      });
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);

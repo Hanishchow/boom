@@ -29,12 +29,31 @@ export default function DataDeletion({ onDeleted }) {
       });
 
       // Fetch all user's records by email (RLS ensures only own data)
-      const [profiles, histories] = await Promise.all([
+      const [profiles, histories, consentRecords] = await Promise.all([
         base44.entities.SkinProfile.filter({ created_by: email }),
-        base44.entities.AnalysisHistory.filter({ created_by: email })
+        base44.entities.AnalysisHistory.filter({ created_by: email }),
+        base44.entities.UserConsent.filter({ created_by: email })
       ]);
 
       const profileIds = profiles.map(p => p.id);
+
+      // Delete selfie images from private storage
+      for (const profile of profiles) {
+        const imageUrls = [
+          profile.face_image_url,
+          profile.front_image_url,
+          profile.right_image_url,
+          profile.left_image_url
+        ].filter(Boolean);
+
+        for (const url of imageUrls) {
+          try {
+            await base44.integrations.Core.DeletePrivateFile({ file_uri: url });
+          } catch {
+            // File may already be deleted — continue
+          }
+        }
+      }
 
       // Delete linked routines and products for each profile
       await Promise.all(
@@ -46,10 +65,11 @@ export default function DataDeletion({ onDeleted }) {
         ])
       );
 
-      // Delete profiles and history
+      // Delete profiles, history, and consent records
       await Promise.all([
         ...profiles.map(p => base44.entities.SkinProfile.delete(p.id)),
-        ...histories.map(h => base44.entities.AnalysisHistory.delete(h.id))
+        ...histories.map(h => base44.entities.AnalysisHistory.delete(h.id)),
+        ...consentRecords.map(c => base44.entities.UserConsent.delete(c.id))
       ]);
 
       // Clear local session flags

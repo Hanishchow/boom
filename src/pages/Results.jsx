@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, AlertTriangle, History, RefreshCw, Sparkles, ChevronRight } from 'lucide-react';
 import { validateSafetyRules } from '@/components/skincare/SkinAnalysisEngine';
+import { logAuditEvent } from '@/lib/auditLogger';
 import SkinMetricsCard from '@/components/skincare/SkinMetricsCard';
 import RoutineDisplay from '@/components/skincare/RoutineDisplay';
 import ProductRecommendations from '@/components/skincare/ProductRecommendations';
@@ -46,6 +47,14 @@ export default function Results() {
     setProducts(prods);
     setSafetyWarnings(validateSafetyRules(prods));
     setLoading(false);
+
+    logAuditEvent({
+      action: 'results_viewed',
+      resourceType: 'SkinProfile',
+      resourceId: id,
+      metadata: { has_image: !!profiles[0]?.face_image_url },
+      success: true
+    });
   };
 
   if (loading) {

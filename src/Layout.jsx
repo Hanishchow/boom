@@ -8,6 +8,7 @@ function Footer() {
     <div className="flex items-center justify-center gap-6 py-3 bg-black border-t border-gray-800 text-xs text-gray-500 mb-16">
       <Link to="/About" className="hover:text-pink-400 transition-colors">About</Link>
       <Link to="/Contact" className="hover:text-pink-400 transition-colors">Contact</Link>
+      <Link to="/PrivacyPolicy" className="hover:text-pink-400 transition-colors">Privacy</Link>
     </div>
   );
 }
