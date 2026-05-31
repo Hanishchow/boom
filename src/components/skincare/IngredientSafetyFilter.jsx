@@ -56,6 +56,17 @@ export const CLEAN_BRAND_TIER = {
 };
 
 /**
+ * Check if an ingredient list contains a target as a whole word (word-boundary match).
+ * Prevents false positives from substring matches (e.g. "retinol" vs "retinyl palmitate").
+ */
+export function hasIngredientWord(ingredients, target) {
+  if (!ingredients || !target) return false;
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+  return ingredients.some(i => regex.test(i));
+}
+
+/**
  * Check if a product has any banned ingredients.
  * Returns true if the product is safe, false if it should be excluded.
  */
@@ -170,7 +181,7 @@ export function runConsistencyValidation(products, routine) {
   });
 
   // Check for ingredient conflicts across the full set
-  const allIngredients = products.flatMap(p => (p.active_ingredients || []).map(i => i.toLowerCase()));
+  const allIngredients = products.flatMap(p => (p.active_ingredients || []));
   
   const conflictPairs = [
     { a: 'retinol', b: 'vitamin c', note: 'Use Vitamin C in AM, Retinol in PM only' },
@@ -180,8 +191,8 @@ export function runConsistencyValidation(products, routine) {
   ];
 
   conflictPairs.forEach(pair => {
-    const hasA = allIngredients.some(i => i.includes(pair.a));
-    const hasB = allIngredients.some(i => i.includes(pair.b));
+    const hasA = hasIngredientWord(allIngredients, pair.a);
+    const hasB = hasIngredientWord(allIngredients, pair.b);
     if (hasA && hasB) {
       issues.push({ type: 'ingredient_conflict', note: pair.note });
     }

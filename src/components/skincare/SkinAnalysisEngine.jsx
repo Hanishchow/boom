@@ -1,6 +1,6 @@
 // AI Skin Analysis Engine - Questionnaire + Image Analysis Logic
-import { INDIAN_PHARMACY_PRODUCTS, INGREDIENT_CONFLICTS, CLIMATE_ADJUSTMENTS, BUDGET_FILTERS } from './ProductDatabase';
-import { isIngredientSafe, getBrandQualityScore, validateRoutineProductMatch, runConsistencyValidation } from './IngredientSafetyFilter';
+import { INDIAN_PHARMACY_PRODUCTS, INGREDIENT_CONFLICTS, BUDGET_FILTERS } from './ProductDatabase';
+import { isIngredientSafe, getBrandQualityScore, validateRoutineProductMatch, runConsistencyValidation, hasIngredientWord } from './IngredientSafetyFilter';
 
 // Skin concern mappings
 const CONCERN_WEIGHTS = {
@@ -55,7 +55,7 @@ const CITY_POLLUTION_MAP = {
 };
 
 // Analyze questionnaire responses
-export function analyzeQuestionnaire(responses) {
+export function analyzeQuestionnaire(responses = {}) {
   const {
     skin_type,
     concerns = [],
@@ -64,8 +64,7 @@ export function analyzeQuestionnaire(responses) {
     sleep_quality,
     location_city,
     budget_range,
-    age_group,
-    gender
+    age_group
   } = responses;
 
   // Determine climate zone
@@ -210,7 +209,7 @@ Be conservative in assessments. If unsure, mark confidence as low.`;
 }
 
 // Combine questionnaire and image analysis
-export function synthesizeSkinProfile(questionnaireAnalysis, imageAnalysis) {
+export function synthesizeSkinProfile(questionnaireAnalysis = {}, imageAnalysis) {
   const base = { ...questionnaireAnalysis };
 
   if (imageAnalysis && imageAnalysis.detected_concerns) {
@@ -246,11 +245,10 @@ export function synthesizeSkinProfile(questionnaireAnalysis, imageAnalysis) {
 }
 
 // Generate personalized routine
-export function generateRoutine(skinProfile) {
+export function generateRoutine(skinProfile = {}) {
   const {
     ai_adjusted_skin_type,
-    primary_concerns,
-    secondary_concerns,
+    primary_concerns = [],
     sensitivity_score,
     climate_zone,
     age_group
@@ -442,10 +440,10 @@ export function generateRoutine(skinProfile) {
 }
 
 // Get product recommendations
-export function getProductRecommendations(skinProfile, routine) {
+export function getProductRecommendations(skinProfile = {}, routine) {
   const {
     ai_adjusted_skin_type,
-    primary_concerns,
+    primary_concerns = [],
     secondary_concerns = [],
     sensitivity_score,
     budget_range,
@@ -474,10 +472,11 @@ export function getProductRecommendations(skinProfile, routine) {
 
     // Stage 1: Skin type + budget filter
     let suitable = products.filter(p => {
-      const skinMatch = p.suitable_for.includes(ai_adjusted_skin_type) ||
-                        p.suitable_for.includes('all') ||
-                        (sensitivity_score === 'high' && p.suitable_for.includes('sensitive'));
-      const budgetMatch = p.price_max <= budgetFilter.max_price;
+      const s = p.suitable_for || [];
+      const skinMatch = s.includes(ai_adjusted_skin_type) ||
+                        s.includes('all') ||
+                        (sensitivity_score === 'high' && s.includes('sensitive'));
+      const budgetMatch = (p.price_max ?? Infinity) <= budgetFilter.max_price;
       return skinMatch && budgetMatch;
     });
 
@@ -486,17 +485,18 @@ export function getProductRecommendations(skinProfile, routine) {
 
     // Stage 3: Routine-product consistency check
     suitable = suitable.filter(p => validateRoutineProductMatch(
-      { ...p, product_type: productType, product_name: p.name },
+      { ...p, product_type: productType, product_name: p.name || '' },
       routineStep
     ));
 
     // If strict filtering leaves nothing, relax routine match only (safety always holds)
     if (suitable.length === 0) {
       suitable = products.filter(p => {
-        const skinMatch = p.suitable_for.includes(ai_adjusted_skin_type) ||
-                          p.suitable_for.includes('all') ||
-                          (sensitivity_score === 'high' && p.suitable_for.includes('sensitive'));
-        const budgetMatch = p.price_max <= budgetFilter.max_price;
+        const s = p.suitable_for || [];
+        const skinMatch = s.includes(ai_adjusted_skin_type) ||
+                          s.includes('all') ||
+                          (sensitivity_score === 'high' && s.includes('sensitive'));
+        const budgetMatch = (p.price_max ?? Infinity) <= budgetFilter.max_price;
         return skinMatch && budgetMatch && isIngredientSafe(p, sensitivity_score);
       });
     }
@@ -507,10 +507,10 @@ export function getProductRecommendations(skinProfile, routine) {
     suitable = suitable.map(p => {
       let score = 0;
       primary_concerns.forEach(c => {
-        if (p.addresses.some(a => a.toLowerCase().includes(c.toLowerCase()))) score += 3;
+        if ((p.addresses || []).some(a => a.toLowerCase().includes(c.toLowerCase()))) score += 3;
       });
       secondary_concerns.forEach(c => {
-        if (p.addresses.some(a => a.toLowerCase().includes(c.toLowerCase()))) score += 1;
+        if ((p.addresses || []).some(a => a.toLowerCase().includes(c.toLowerCase()))) score += 1;
       });
       score += getBrandQualityScore(p.brand);           // clean brand bonus
       if (p.availability === 'high') score += 1;
@@ -521,18 +521,19 @@ export function getProductRecommendations(skinProfile, routine) {
     suitable.sort((a, b) => b.score - a.score);
 
     const best = suitable[0];
+    if (!best) return null;
     return {
       product_type: productType,
       routine_step: productType,
-      product_name: best.name,
-      brand: best.brand,
-      active_ingredients: best.active_ingredients,
+      product_name: best.name || '',
+      brand: best.brand || '',
+      active_ingredients: best.active_ingredients || [],
       why_recommended: generateWhyText(best, primary_concerns, ai_adjusted_skin_type),
-      price_range_min: best.price_min,
-      price_range_max: best.price_max,
-      availability_confidence: best.availability,
-      suitable_for_skin_types: best.suitable_for,
-      addresses_concerns: best.addresses,
+      price_range_min: best.price_min || 0,
+      price_range_max: best.price_max || 0,
+      availability_confidence: best.availability || 'unknown',
+      suitable_for_skin_types: best.suitable_for || [],
+      addresses_concerns: best.addresses || [],
       usage_time: usageTime,
       is_pharmacy_generic: best.is_generic
     };
@@ -578,27 +579,28 @@ export function getProductRecommendations(skinProfile, routine) {
 }
 
 function generateWhyText(product, concerns, skinType) {
-  const addressedConcerns = product.addresses.filter(a => 
+  const addressedConcerns = (product.addresses || []).filter(a => 
     concerns.some(c => a.toLowerCase().includes(c.toLowerCase()))
   );
   
-  let text = `Recommended for ${skinType} skin. `;
+  let text = `Recommended for ${skinType || 'your'} skin. `;
   if (addressedConcerns.length > 0) {
     text += `Addresses your concerns: ${addressedConcerns.join(', ')}. `;
   }
-  text += `Key ingredients: ${product.active_ingredients.slice(0, 2).join(', ')}. `;
+  const ingredients = product.active_ingredients || [];
+  text += `Key ingredients: ${ingredients.slice(0, 2).join(', ')}. `;
   if (product.is_generic) {
     text += 'Pharmacy generic - excellent value.';
   } else {
-    text += `${product.availability} availability in Indian pharmacies.`;
+    text += `${product.availability || 'good'} availability in Indian pharmacies.`;
   }
   return text;
 }
 
 // Derive budget from user profile (AI-driven, not user input)
-export function deriveBudget(qData, skinProfile) {
+export function deriveBudget(qData = {}, skinProfile = {}) {
   const { age_group, diet_type, location_city, primary_concerns = [] } = qData;
-  const { sensitivity_score, climate_zone } = skinProfile;
+  const { sensitivity_score } = skinProfile;
 
   // Score-based budget derivation
   let score = 0;
@@ -648,12 +650,12 @@ export function deriveBudget(qData, skinProfile) {
 // Check for ingredient conflicts in recommendations + run consistency validation
 export function validateSafetyRules(recommendations, routine = null) {
   const warnings = [];
-  const ingredients = recommendations.flatMap(r => r.active_ingredients || []);
+  const ingredients = (recommendations || []).flatMap(r => r.active_ingredients || []);
 
   // Ingredient conflict checks
   INGREDIENT_CONFLICTS.forEach(conflict => {
-    const has1 = ingredients.some(i => i.toLowerCase().includes(conflict.ingredient1.toLowerCase()));
-    const has2 = ingredients.some(i => i.toLowerCase().includes(conflict.ingredient2.toLowerCase()));
+    const has1 = hasIngredientWord(ingredients, conflict.ingredient1);
+    const has2 = hasIngredientWord(ingredients, conflict.ingredient2);
     if (has1 && has2) {
       warnings.push({
         type: 'ingredient_conflict',
