@@ -5,10 +5,12 @@ import { Switch } from "@/components/ui/switch";
 import { Link } from 'react-router-dom';
 import { User, Bell, Moon, Shield, HelpCircle, ChevronRight } from 'lucide-react';
 import DataDeletion from '@/components/security/DataDeletion';
+import { useGenderTheme } from '@/lib/GenderThemeContext';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const { resetTheme } = useGenderTheme();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
 
@@ -156,7 +158,7 @@ export default function Profile() {
         </div>
 
         <Button
-          onClick={() => base44.auth.logout()}
+          onClick={() => { resetTheme(); base44.auth.logout(); }}
           variant="outline"
           className="w-full border-red-500 text-red-500 hover:bg-red-500/10 rounded-full h-12"
         >

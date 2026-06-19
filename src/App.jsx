@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { GenderThemeProvider } from '@/lib/GenderThemeContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
@@ -78,13 +79,15 @@ function App() {
 
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <GenderThemeProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <NavigationTracker />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </GenderThemeProvider>
     </AuthProvider>
   )
 }

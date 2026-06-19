@@ -16,6 +16,7 @@ import {
   deriveBudget
 } from '@/components/skincare/SkinAnalysisEngine';
 import { logAuditEvent } from '@/lib/auditLogger';
+import { useGenderTheme } from '@/lib/GenderThemeContext';
 
 const STEPS = {
   LOADING: 'loading',
@@ -26,6 +27,7 @@ const STEPS = {
 
 export default function SkinAnalysis() {
   const navigate = useNavigate();
+  const { applyGenderTheme } = useGenderTheme();
   const [currentStep, setCurrentStep] = useState(STEPS.LOADING);
   const [questionnaireData, setQuestionnaireData] = useState(null);
   const [prefillData, setPrefillData] = useState(null);
@@ -164,6 +166,9 @@ export default function SkinAnalysis() {
         analysis_confidence: imageAnalysis?.analysis_confidence || null,
         is_complete: true
       };
+
+      // Apply gender theme immediately upon profile creation
+      if (qData.gender) applyGenderTheme(qData.gender);
 
       const savedProfile = await base44.entities.SkinProfile.create(profileData);
 

@@ -86,3 +86,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Gender theme tokens — defaults (overridden at runtime by GenderThemeContext) */
+:root {
+  --theme-bg: #000000;
+  --theme-surface: #111111;
+  --theme-card: #1a1a1a;
+  --theme-border: #2a2a2a;
+  --theme-primary: #ec4899;
+  --theme-primary-hover: #db2777;
+  --theme-accent: #f472b6;
+  --theme-text: #ffffff;
+  --theme-text-muted: #9ca3af;
+  --theme-radius-card: 1rem;
+  --theme-radius-btn: 9999px;
+  --theme-shadow: none;
+  --theme-font-weight-heading: 700;
+  --theme-letter-spacing: normal;
+  --theme-line-height: 1.6;
+  --theme-btn-gradient: none;
+}
+
+/* Theme-aware utility classes */
+.theme-bg        { background-color: var(--theme-bg) !important; }
+.theme-surface   { background-color: var(--theme-surface) !important; }
+.theme-card      { background-color: var(--theme-card) !important; box-shadow: var(--theme-shadow) !important; border-radius: var(--theme-radius-card) !important; border-color: var(--theme-border) !important; }
+.theme-text      { color: var(--theme-text) !important; }
+.theme-text-muted { color: var(--theme-text-muted) !important; }
+.theme-btn       { background: var(--theme-btn-gradient, var(--theme-primary)) !important; color: #fff !important; border-radius: var(--theme-radius-btn) !important; font-weight: var(--theme-font-weight-heading) !important; letter-spacing: var(--theme-letter-spacing) !important; }
+.theme-btn:hover { background-color: var(--theme-primary-hover) !important; }
