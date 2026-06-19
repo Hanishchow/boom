@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft } from 'lucide-react';
 import { sanitizeQuestionnaireData } from '@/lib/inputSanitizer';
+import { useGenderTheme } from '@/lib/GenderThemeContext';
 
 const SKIN_TYPES = [
   { value: 'dry', label: 'Dry', desc: 'Tight, flaky, dull' },
@@ -55,6 +56,7 @@ const ageToGroup = (age) => {
 };
 
 export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
+  const { applyGenderTheme } = useGenderTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [emailError, setEmailError] = useState('');
   const [data, setData] = useState({
@@ -205,7 +207,7 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                     ].map((opt) => (
                       <button
                         key={opt.value}
-                        onClick={() => setData({ ...data, gender: opt.value })}
+                        onClick={() => { setData({ ...data, gender: opt.value }); applyGenderTheme(opt.value); }}
                         className={`p-4 rounded-2xl border-2 transition-all text-sm font-semibold ${
                           data.gender === opt.value ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'
                         }`}>
