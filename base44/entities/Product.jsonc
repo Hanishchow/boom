@@ -1,0 +1,78 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "product_name": {
+      "type": "string",
+      "description": "Full product name"
+    },
+    "brand": {
+      "type": "string",
+      "enum": [
+        "Sun Pharma",
+        "Glenmark",
+        "Hyphen",
+        "COSRX"
+      ],
+      "description": "Brand name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Cleanser",
+        "Face Wash",
+        "Sunscreen",
+        "Moisturizer",
+        "Serum",
+        "Spot Treatment",
+        "Toner"
+      ],
+      "description": "Product category"
+    },
+    "key_ingredients": {
+      "type": "string",
+      "description": "Key active ingredients (comma-separated)"
+    },
+    "skin_concerns_treated": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Acne",
+          "Acne Scars",
+          "Hyperpigmentation/Dark Spots",
+          "Uneven Skin Tone",
+          "Dryness/Dehydration",
+          "Sun Damage/UV Protection",
+          "Aging/Fine Lines",
+          "Oily Skin/Excess Sebum",
+          "Blackheads/Pores",
+          "Sensitive Skin/Irritation/Redness",
+          "Barrier Repair"
+        ]
+      },
+      "description": "Skin concerns this product addresses"
+    },
+    "routine_step": {
+      "type": "string",
+      "enum": [
+        "AM",
+        "PM",
+        "Both"
+      ],
+      "description": "When to use in routine"
+    },
+    "prescription_strength": {
+      "type": "boolean",
+      "description": "True if product contains Rx-grade actives (e.g. Adapalene, Clindamycin)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional usage caution or additional notes"
+    }
+  },
+  "required": [
+    "product_name",
+    "brand"
+  ]
+}

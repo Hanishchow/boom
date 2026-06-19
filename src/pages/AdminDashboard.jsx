@@ -4,8 +4,9 @@
  */
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Shield, Database, Users, AlertTriangle, Loader2, Camera } from 'lucide-react';
+import { Shield, Database, Users, AlertTriangle, Loader2, Camera, Package } from 'lucide-react';
 import UserSelfiesPanel from '@/components/admin/UserSelfiesPanel';
+import AdminProductsPanel from '@/components/admin/AdminProductsPanel';
 
 const NAV = [
   { id: 'overview', label: 'Overview', icon: Users },
@@ -14,6 +15,7 @@ const NAV = [
 
 const DATA_SUBSECTIONS = [
   { id: 'selfies', label: 'User Selfies', icon: Camera },
+  { id: 'products', label: 'Products', icon: Package },
 ];
 
 export default function AdminDashboard() {
@@ -158,6 +160,19 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <UserSelfiesPanel />
+            </div>
+          )}
+
+          {activeSection === 'data' && activeData === 'products' && (
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <Package className="w-5 h-5 text-pink-400" />
+                <div>
+                  <h2 className="text-lg font-bold">Product Database</h2>
+                  <p className="text-xs text-gray-500">Used by the AI recommendation engine · Filterable by brand & concern</p>
+                </div>
+              </div>
+              <AdminProductsPanel />
             </div>
           )}
         </main>
