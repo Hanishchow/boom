@@ -7,14 +7,14 @@ const BRANDS = ['Sun Pharma', 'Glenmark', 'Hyphen', 'COSRX'];
 const CATEGORIES = ['Cleanser', 'Face Wash', 'Sunscreen', 'Moisturizer', 'Serum', 'Spot Treatment', 'Toner'];
 const ROUTINE_STEPS = ['AM', 'PM', 'Both'];
 const CONCERNS = [
-  'Acne', 'Acne Scars', 'Hyperpigmentation/Dark Spots', 'Uneven Skin Tone',
-  'Dryness/Dehydration', 'Sun Damage/UV Protection', 'Aging/Fine Lines',
-  'Oily Skin/Excess Sebum', 'Blackheads/Pores', 'Sensitive Skin/Irritation/Redness', 'Barrier Repair'
+  'Acne', 'Acne Scars', 'Hyperpigmentation', 'Uneven Skin Tone',
+  'Dryness', 'Sun Damage', 'Aging',
+  'Oily Skin', 'Blackheads', 'Sensitivity', 'Barrier Repair'
 ];
 
 const EMPTY_FORM = {
-  product_name: '', brand: '', category: '', key_ingredients: '',
-  skin_concerns_treated: [], routine_step: 'Both', prescription_strength: false, notes: ''
+  product_name: '', brand: '', category: '', one_line_description: '', key_ingredients: '',
+  skin_concerns_treated: [], routine_step: 'Both', prescription_strength: false, is_active: true, notes: ''
 };
 
 function ProductForm({ initial, onSave, onCancel, saving }) {
@@ -39,6 +39,16 @@ function ProductForm({ initial, onSave, onCancel, saving }) {
             value={form.product_name}
             onChange={e => setForm(f => ({ ...f, product_name: e.target.value }))}
             placeholder="e.g. Advanced Snail 96 Mucin Power Essence"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs text-gray-400 mb-1 block">One-Line Description (max 120 chars)</label>
+          <input
+            maxLength={120}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600"
+            value={form.one_line_description || ''}
+            onChange={e => setForm(f => ({ ...f, one_line_description: e.target.value }))}
+            placeholder="Short description shown on recommendation card"
           />
         </div>
         <div>

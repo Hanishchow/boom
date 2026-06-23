@@ -19,15 +19,20 @@
     "category": {
       "type": "string",
       "enum": [
-        "Cleanser",
         "Face Wash",
-        "Sunscreen",
-        "Moisturizer",
+        "Cleanser",
+        "Toner",
         "Serum",
+        "Moisturizer",
         "Spot Treatment",
-        "Toner"
+        "Sunscreen"
       ],
       "description": "Product category"
+    },
+    "one_line_description": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Short description shown on recommendation card (max 120 chars)"
     },
     "key_ingredients": {
       "type": "string",
@@ -40,14 +45,14 @@
         "enum": [
           "Acne",
           "Acne Scars",
-          "Hyperpigmentation/Dark Spots",
+          "Hyperpigmentation",
           "Uneven Skin Tone",
-          "Dryness/Dehydration",
-          "Sun Damage/UV Protection",
-          "Aging/Fine Lines",
-          "Oily Skin/Excess Sebum",
-          "Blackheads/Pores",
-          "Sensitive Skin/Irritation/Redness",
+          "Dryness",
+          "Sun Damage",
+          "Aging",
+          "Oily Skin",
+          "Blackheads",
+          "Sensitivity",
           "Barrier Repair"
         ]
       },
@@ -64,7 +69,13 @@
     },
     "prescription_strength": {
       "type": "boolean",
+      "default": false,
       "description": "True if product contains Rx-grade actives (e.g. Adapalene, Clindamycin)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this product is active and available for recommendations"
     },
     "notes": {
       "type": "string",

@@ -21,10 +21,26 @@ export default function ProductCard({ product }) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-gray-900">{product.product_name}</h3>
+              {product.prescription_strength && (
+                <span
+                  className="inline-flex items-center text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 cursor-help"
+                  title="Consult a dermatologist before use."
+                >
+                  Rx
+                </span>
+              )}
               {product.is_pharmacy_generic && (
                 <Badge className="bg-blue-100 text-blue-800 text-xs">Generic</Badge>
               )}
             </div>
+            {product.one_line_description && (
+              <p
+                className="text-sm italic mb-1"
+                style={{ color: 'var(--color-text-muted, #6b7280)', fontSize: '0.78rem' }}
+              >
+                {product.one_line_description}
+              </p>
+            )}
             <p className="text-sm text-gray-600">{product.brand}</p>
           </div>
           <ShoppingBag className="w-5 h-5 text-gray-400" />
