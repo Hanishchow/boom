@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Camera, ChevronLeft, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Camera, ChevronLeft, Loader2, CheckCircle, AlertTriangle, Upload } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ConsentGate from '@/components/security/ConsentGate';
+import SkinCameraCapture from '@/components/skincare/SkinCameraCapture';
 import { validateImageFile } from '@/lib/inputSanitizer';
 import { logAuditEvent } from '@/lib/auditLogger';
 
@@ -46,6 +47,7 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
   const [captured, setCaptured] = useState({ front: null, right: null, left: null });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [captureMode, setCaptureMode] = useState('upload'); // 'upload' | 'camera'
   const fileInputRef = useRef(null);
 
   const currentCapture = CAPTURE_STEPS[captureStep];
@@ -92,6 +94,22 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
 
   const handleAnalyze = () => {
     onImagesAnalyzed(captured);
+  };
+
+  const handleCameraCapture = async ({ url, data }) => {
+    setError(null);
+    const key = currentCapture.id;
+    const updated = { ...captured, [key]: { url, data } };
+    setCaptured(updated);
+    await logAuditEvent({
+      action: 'selfie_uploaded',
+      resourceType: 'selfie',
+      metadata: { step: key, mode: 'camera' },
+      success: true
+    });
+    if (captureStep < CAPTURE_STEPS.length - 1) {
+      setCaptureStep(captureStep + 1);
+    }
   };
 
   const allCaptured = captured.front && captured.right && captured.left;
@@ -192,7 +210,35 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
         ))}
       </div>
 
-      {/* Face Guide Area */}
+      {/* Capture mode toggle */}
+      <div className="flex gap-2 mb-4 bg-gray-900 rounded-xl p-1">
+        <button
+          onClick={() => setCaptureMode('camera')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            captureMode === 'camera' ? 'bg-pink-500 text-white' : 'text-gray-400'
+          }`}
+        >
+          <Camera className="w-4 h-4" /> Take Photo
+        </button>
+        <button
+          onClick={() => setCaptureMode('upload')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            captureMode === 'upload' ? 'bg-pink-500 text-white' : 'text-gray-400'
+          }`}
+        >
+          <Upload className="w-4 h-4" /> Upload Photo
+        </button>
+      </div>
+
+      {/* Camera mode */}
+      {captureMode === 'camera' && !captured[currentCapture.id] && (
+        <div className="flex-1 flex flex-col items-center justify-center mb-6">
+          <SkinCameraCapture onCapture={handleCameraCapture} />
+        </div>
+      )}
+
+      {/* Upload mode — Face Guide Area */}
+      {captureMode === 'upload' && (
       <div className="flex-1 flex flex-col items-center justify-center mb-6">
         <div className="relative flex items-center justify-center mb-4">
           {/* Face oval guide */}
@@ -218,6 +264,7 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
         <p className="text-gray-400 text-sm text-center">{currentCapture.description}</p>
         <p className="text-pink-400 text-xs text-center mt-1">{currentCapture.guide}</p>
       </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/30 p-3 rounded-xl mb-4">
@@ -238,6 +285,7 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
 
       <div className="space-y-3">
         {!allCaptured ? (
+          captureMode === 'upload' ? (
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || isAnalyzing}
@@ -252,6 +300,16 @@ export default function SelfieCapture({ onImagesAnalyzed, onSkip, isAnalyzing })
               <><Camera className="w-5 h-5 mr-2" /> Capture {currentCapture.title}</>
             )}
           </Button>
+          ) : captured[currentCapture.id] ? (
+          <Button
+            onClick={() => setCaptured({ ...captured, [currentCapture.id]: null })}
+            disabled={isAnalyzing}
+            className="w-full h-14 rounded-xl font-semibold text-white text-base"
+            style={{ background: '#FF69B4' }}
+          >
+            <Camera className="w-5 h-5 mr-2" /> Retake {currentCapture.title}
+          </Button>
+          ) : null
         ) : (
           <Button
             onClick={handleAnalyze}

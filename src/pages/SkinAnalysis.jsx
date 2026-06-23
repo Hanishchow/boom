@@ -17,6 +17,7 @@ import {
 } from '@/components/skincare/SkinAnalysisEngine';
 import { logAuditEvent } from '@/lib/auditLogger';
 import { useGenderTheme } from '@/lib/GenderThemeContext';
+import { useAqi } from '@/hooks/useAqi';
 
 const STEPS = {
   LOADING: 'loading',
@@ -28,6 +29,7 @@ const STEPS = {
 export default function SkinAnalysis() {
   const navigate = useNavigate();
   const { applyGenderTheme } = useGenderTheme();
+  const { aqiData, fetchAqi } = useAqi();
   const [currentStep, setCurrentStep] = useState(STEPS.LOADING);
   const [questionnaireData, setQuestionnaireData] = useState(null);
   const [prefillData, setPrefillData] = useState(null);
@@ -36,6 +38,7 @@ export default function SkinAnalysis() {
 
   useEffect(() => {
     loadExistingProfile();
+    fetchAqi();
   }, []);
 
   const loadExistingProfile = async () => {
@@ -99,7 +102,16 @@ export default function SkinAnalysis() {
           const result = await base44.functions.invoke('analyze-skin', {
             frontImage: images.front.data,
             rightImage: images.right?.data || null,
-            leftImage: images.left?.data || null
+            leftImage: images.left?.data || null,
+            // Full GNN input payload (Section 6)
+            gender: qData.gender || null,
+            age_years: qData.calculated_age || null,
+            diet_type: qData.diet_type || null,
+            skin_concerns: qData.concerns || [],
+            aqi_index: aqiData?.aqi_index ?? null,
+            pm25: aqiData?.pm25 ?? null,
+            pm10: aqiData?.pm10 ?? null,
+            no2: aqiData?.no2 ?? null,
           });
           imageAnalysis = result?.detected_concerns ? result : null;
         } catch (invokeErr) {
@@ -282,6 +294,17 @@ export default function SkinAnalysis() {
                 {analysisProgress}
               </motion.p>
               <p className="text-gray-400 text-sm mb-8">This may take a few seconds...</p>
+
+              {/* AQI badge */}
+              {aqiData?.badge && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900 border border-gray-800 mb-6">
+                  <span className={`w-2 h-2 rounded-full ${
+                    aqiData.badge.color === 'green' ? 'bg-green-500' :
+                    aqiData.badge.color === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`} />
+                  <span className="text-xs text-gray-300">{aqiData.badge.label}</span>
+                </div>
+              )}
 
               <div className="space-y-3">
                 {[
