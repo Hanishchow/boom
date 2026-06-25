@@ -182,49 +182,58 @@ export default function SkinAnalysis() {
       // Apply gender theme immediately upon profile creation
       if (qData.gender) applyGenderTheme(qData.gender);
 
-      const savedProfile = await base44.entities.SkinProfile.create(profileData);
+      // Save to database — non-critical, should not block navigation
+      let savedProfileId = null;
+      try {
+        const savedProfile = await base44.entities.SkinProfile.create(profileData);
+        savedProfileId = savedProfile.id;
 
-      await base44.entities.SkincareRoutine.create({
-        profile_id: savedProfile.id,
-        ...routine,
-        generated_date: new Date().toISOString().split('T')[0]
-      });
-
-      for (const product of products) {
-        await base44.entities.ProductRecommendation.create({
+        await base44.entities.SkincareRoutine.create({
           profile_id: savedProfile.id,
-          ...product
+          ...routine,
+          generated_date: new Date().toISOString().split('T')[0]
         });
+
+        for (const product of products) {
+          await base44.entities.ProductRecommendation.create({
+            profile_id: savedProfile.id,
+            ...product
+          });
+        }
+
+        await base44.entities.AnalysisHistory.create({
+          profile_id: savedProfile.id,
+          analysis_type: frontImageUrl ? 'combined' : 'questionnaire',
+          skin_type_detected: skinProfile.ai_adjusted_skin_type,
+          concerns_detected: (skinProfile.ai_detected_concerns || []).map(c => ({
+            concern: c.concern,
+            confidence: c.confidence,
+            severity: c.severity
+          })),
+          sensitivity_score: skinProfile.sensitivity_score,
+          notes: [
+            `Budget: ${budgetData.budget_range} (₹${budgetData.budget_min_inr}–₹${budgetData.budget_max_inr}/mo)`,
+            budgetData.budget_reasoning,
+            skinProfile.climate_zone ? `Climate: ${skinProfile.climate_zone}` : ''
+          ].filter(Boolean).join(' | '),
+          image_url: frontImageUrl || ''
+        });
+
+        // Mark onboarding complete for this user
+        try {
+          const currentUser = await base44.auth.me();
+          const userName = currentUser?.full_name || currentUser?.email || '';
+          localStorage.setItem(`onboardingComplete_${userName}`, 'true');
+          localStorage.setItem('currentProfileName', userName);
+        } catch (e) {}
+
+        await logAuditEvent({ action: 'profile_created', resourceType: 'SkinProfile', resourceId: savedProfile.id, success: true });
+      } catch (saveErr) {
+        console.error('Profile save failed, continuing to analysis:', saveErr);
       }
 
-      await base44.entities.AnalysisHistory.create({
-        profile_id: savedProfile.id,
-        analysis_type: frontImageUrl ? 'combined' : 'questionnaire',
-        skin_type_detected: skinProfile.ai_adjusted_skin_type,
-        concerns_detected: (skinProfile.ai_detected_concerns || []).map(c => ({
-          concern: c.concern,
-          confidence: c.confidence,
-          severity: c.severity
-        })),
-        sensitivity_score: skinProfile.sensitivity_score,
-        notes: [
-          `Budget: ${budgetData.budget_range} (₹${budgetData.budget_min_inr}–₹${budgetData.budget_max_inr}/mo)`,
-          budgetData.budget_reasoning,
-          skinProfile.climate_zone ? `Climate: ${skinProfile.climate_zone}` : ''
-        ].filter(Boolean).join(' | '),
-        image_url: frontImageUrl || ''
-      });
-
-      // Mark onboarding complete for this user
-      try {
-        const currentUser = await base44.auth.me();
-        const userName = currentUser?.full_name || currentUser?.email || '';
-        localStorage.setItem(`onboardingComplete_${userName}`, 'true');
-        localStorage.setItem('currentProfileName', userName);
-      } catch (e) {}
-
-      await logAuditEvent({ action: 'profile_created', resourceType: 'SkinProfile', resourceId: savedProfile.id, success: true });
-      navigate(createPageUrl('Results') + `?profile=${savedProfile.id}`);
+      // Always navigate to results — a failed save should not block the user
+      navigate(createPageUrl('Results') + (savedProfileId ? `?profile=${savedProfileId}` : ''));
 
     } catch (error) {
       console.error('Analysis error:', error);

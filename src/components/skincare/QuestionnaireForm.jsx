@@ -104,12 +104,23 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
   const canProceed = () => {
     if (currentStep === 0) return data.email && isValidEmail(data.email) && data.gender && data.dob;
     if (currentStep === 1) return data.skin_types?.length > 0;
-    if (currentStep === 2) return data.concerns?.length > 0 && data.diet_type;
+    if (currentStep === 2) {
+      const hasConcerns = Array.isArray(data.concerns)
+        ? data.concerns.length > 0
+        : (typeof data.concerns === 'string' && data.concerns.trim().length > 0);
+      return hasConcerns && data.diet_type;
+    }
     if (currentStep === 3) return data.location_city;
     return true;
   };
 
   const handleNext = () => {
+    if (currentStep === 2) {
+      const hasConcerns = Array.isArray(data.concerns)
+        ? data.concerns.length > 0
+        : (typeof data.concerns === 'string' && data.concerns.trim().length > 0);
+      if (!hasConcerns || !data.diet_type) return;
+    }
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
