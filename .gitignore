@@ -33,3 +33,8 @@ security/reports/
 security/config.local.*
 __pycache__/
 *.pyc
+
+# datasets (confidential — never commit)
+*.xlsx
+*.xlsm
+pipeline/reports/
