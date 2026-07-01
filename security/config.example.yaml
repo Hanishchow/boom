@@ -1,0 +1,17 @@
+# Célure AI security pipeline — example config (copy to config.local.yaml, keep it untracked)
+# JSON also works if you don't have PyYAML installed.
+
+# Deployed app to run DYNAMIC checks against. Leave null to run static-only.
+target_url: null            # e.g. https://celure-xxxx.base44.app
+
+# Authorized-targets allow-list. Dynamic checks refuse to touch a host not listed here.
+# Only add hosts you own or are explicitly authorized to test.
+scope_hosts: []             # e.g. ["celure-xxxx.base44.app"]
+
+# Credentials for authenticated tests you add later (kept out of git).
+auth:
+  bearer: null
+  cookies: {}
+
+# Free-form space for engines you add later.
+options: {}
