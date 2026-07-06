@@ -132,33 +132,12 @@ const PhotoZone = forwardRef(({
 
   const { status: faceMeshStatus, detectFace } = useFaceMesh(onFaceMeshResults);
 
-  // --- Photo loading ---
-  const loadPhoto = useCallback(async (src) => {
-    setLoadError(null);
-    setNoFaceDetected(false);
-
-    // Revoke previous blob URL
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-      blobUrlRef.current = null;
-    }
-
-    try {
-      // Try fetch → blob to avoid CORS / canvas tainting
-      const response = await fetch(src);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      blobUrlRef.current = blobUrl;
-      loadImageElement(blobUrl);
-    } catch {
-      // Fallback: direct load (may taint canvas if cross-origin without CORS headers)
-      loadImageElement(src);
-    }
-  }, [faceMeshStatus]);
-
-  const loadImageElement = useCallback((url) => {
+  // --- Load image element from URL (shared by both paths) ---
+  const loadImageElement = useCallback((url, useCrossOrigin = false) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set crossOrigin for external URLs — blob URLs are same-origin
+    // Setting crossOrigin on a blob URL can cause load failures in some browsers
+    if (useCrossOrigin) img.crossOrigin = 'anonymous';
     img.onload = () => {
       imageRef.current = img;
 
@@ -193,10 +172,49 @@ const PhotoZone = forwardRef(({
     img.src = url;
   }, [faceMeshStatus, detectFace]);
 
+  // --- Load photo from File object (camera/upload) ---
+  const loadPhotoFromFile = useCallback((file) => {
+    setLoadError(null);
+    setNoFaceDetected(false);
+
+    // Revoke previous blob URL
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+    }
+
+    const url = URL.createObjectURL(file);
+    blobUrlRef.current = url;
+    loadImageElement(url, false);
+  }, [loadImageElement]);
+
+  // --- Load photo from external URL (analysis photo, Results page) ---
+  const loadPhotoFromUrl = useCallback(async (src) => {
+    setLoadError(null);
+    setNoFaceDetected(false);
+
+    // Revoke previous blob URL
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+
+    try {
+      // Try fetch → blob to avoid CORS / canvas tainting
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      blobUrlRef.current = blobUrl;
+      loadImageElement(blobUrl, false);
+    } catch {
+      // Fallback: direct load with crossOrigin (may taint canvas if CORS fails)
+      loadImageElement(src, true);
+    }
+  }, [loadImageElement]);
+
   // Auto-load photo from URL param (Results page)
   useEffect(() => {
-    if (photoUrl) loadPhoto(photoUrl);
-  }, [photoUrl]); // eslint-disable-line
+    if (photoUrl) loadPhotoFromUrl(photoUrl);
+  }, [photoUrl, loadPhotoFromUrl]);
 
   // Detect face when FaceMesh becomes ready (if photo already loaded)
   useEffect(() => {
@@ -308,6 +326,38 @@ const PhotoZone = forwardRef(({
     );
   }
 
+  // --- FaceMesh error state (before photo upload) ---
+  if (faceMeshStatus === 'error' && !photoLoaded) {
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          </div>
+          <h3 className="text-lg font-semibold mb-1">Analysis Engine Unavailable</h3>
+          <p className="text-sm text-gray-400">The face analysis engine could not be loaded. You can still upload a photo, but simulation features will be limited.</p>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) loadPhotoFromFile(file);
+          }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full h-12 bg-pink-500 rounded-full font-medium text-sm flex items-center justify-center gap-2"
+        >
+          <Camera className="w-4 h-4" /> Upload Photo Anyway
+        </button>
+      </div>
+    );
+  }
+
   // --- Error state: no face detected ---
   if (noFaceDetected) {
     return (
@@ -351,11 +401,7 @@ const PhotoZone = forwardRef(({
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              const url = URL.createObjectURL(file);
-              blobUrlRef.current = url;
-              loadPhoto(url);
-            }
+            if (file) loadPhotoFromFile(file);
           }}
         />
 
@@ -369,7 +415,7 @@ const PhotoZone = forwardRef(({
 
           {analysisPhotoUrl && (
             <button
-              onClick={() => loadPhoto(analysisPhotoUrl)}
+              onClick={() => loadPhotoFromUrl(analysisPhotoUrl)}
               className="w-full h-12 bg-gray-800 border border-gray-700 rounded-full font-medium text-sm flex items-center justify-center gap-2 text-gray-300"
             >
               <Upload className="w-4 h-4" /> Use My Analysis Photo
