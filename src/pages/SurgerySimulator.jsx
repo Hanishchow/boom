@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Sparkles, Eye, Save, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Eye, Save, MapPin, Loader2, Brain } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import DisclaimerModal from '@/components/surgery/DisclaimerModal';
 import PhotoZone from '@/components/surgery/PhotoZone';
 import ProcedureSelector from '@/components/surgery/ProcedureSelector';
 import GoldenRatioPanel from '@/components/surgery/GoldenRatioPanel';
 import ClinicResultsModal from '@/components/surgery/ClinicResultsModal';
+import MultiPhotoUpload from '@/components/surgery/MultiPhotoUpload';
 import { findNearestClinics } from '@/lib/clinicMatcher';
 
 export default function SurgerySimulator() {
@@ -23,7 +24,6 @@ export default function SurgerySimulator() {
   const [goldenRatioReport, setGoldenRatioReport] = useState(null);
   const [userAge, setUserAge] = useState(null);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
-  const [analysisPhotoUrl, setAnalysisPhotoUrl] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [showClinicModal, setShowClinicModal] = useState(false);
   const [matchedClinics, setMatchedClinics] = useState([]);
@@ -32,6 +32,14 @@ export default function SurgerySimulator() {
   const [isSaving, setIsSaving] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [panelExpanded, setPanelExpanded] = useState(false);
+
+  // Workflow state
+  const [step, setStep] = useState('upload'); // 'upload' | 'results'
+  const [scanPhotos, setScanPhotos] = useState(null);
+  const [initialFrontPhoto, setInitialFrontPhoto] = useState(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState({ front: null, right: null, left: null });
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [analyzingAI, setAnalyzingAI] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -42,7 +50,7 @@ export default function SurgerySimulator() {
       // Check URL for photo param (from Results page)
       const urlParams = new URLSearchParams(window.location.search);
       const photoParam = urlParams.get('photo');
-      if (photoParam) setPhotoUrl(photoParam);
+      if (photoParam) setInitialFrontPhoto(photoParam);
 
       // Check disclaimer
       const dismissed = localStorage.getItem('surgery_simulator_dismissed') === 'true';
@@ -56,7 +64,7 @@ export default function SurgerySimulator() {
       setProcedures(procs);
       setClinics(clins);
 
-      // Load user profile for DOB + analysis photo
+      // Load user profile for DOB + scan photos
       const user = await base44.auth.me();
       const profiles = await base44.entities.SkinProfile.filter(
         { created_by: user.email },
@@ -71,8 +79,12 @@ export default function SurgerySimulator() {
           const age = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 3600 * 1000));
           setUserAge(age);
         }
-        if (profile.front_image_url || profile.face_image_url) {
-          setAnalysisPhotoUrl(profile.front_image_url || profile.face_image_url);
+        if (profile.front_image_url || profile.right_image_url || profile.left_image_url) {
+          setScanPhotos({
+            front: profile.front_image_url || profile.face_image_url,
+            right: profile.right_image_url,
+            left: profile.left_image_url
+          });
         }
       }
     } catch (err) {
@@ -89,6 +101,46 @@ export default function SurgerySimulator() {
     } catch (e) { /* non-critical */ }
     setDisclaimerAccepted(true);
   };
+
+  // --- Photos ready from upload step → move to results ---
+  const handlePhotosReady = useCallback((photos) => {
+    setUploadedPhotos(photos);
+    setPhotoUrl(photos.front);
+    setStep('results');
+  }, []);
+
+  // --- Golden ratio computed: auto-select procedures + AI analysis ---
+  const handleGoldenRatioComputed = useCallback((report) => {
+    setGoldenRatioReport(report);
+    if (!report) return;
+
+    // Auto-select recommended procedures based on golden ratio scores
+    const recommendedNames = report.metrics
+      .filter(m => m.score < 70 && m.relatedProcedure)
+      .map(m => m.relatedProcedure);
+    const suggested = procedures.filter(p => recommendedNames.includes(p.procedure_name));
+    if (suggested.length > 0) {
+      setSelectedProcedures(prev => {
+        // Only auto-select if user hasn't manually changed yet
+        if (prev.length === 0) return suggested.slice(0, 3);
+        return prev;
+      });
+    }
+
+    // AI analysis via InvokeLLM
+    setAnalyzingAI(true);
+    const metricsSummary = report.metrics
+      .filter(m => m.relatedProcedure)
+      .map(m => `${m.name}: score ${m.score}/100 (ratio ${m.ratio}, ideal ${m.ideal})`)
+      .join('; ');
+
+    base44.integrations.Core.InvokeLLM({
+      prompt: `You are a cosmetic surgery consultant AI for the Célure app. Based on facial golden ratio analysis with overall harmony score ${report.overallScore}/100 and these metrics: ${metricsSummary}. Provide a brief, professional 2-3 sentence analysis of the facial features and recommend the most beneficial procedures. Be conservative and prioritize natural results. Do not recommend unnecessary procedures.`
+    })
+      .then(text => setAiAnalysis(text))
+      .catch(() => setAiAnalysis(null))
+      .finally(() => setAnalyzingAI(false));
+  }, [procedures]);
 
   const handleToggleProcedure = useCallback((procedure) => {
     setSelectedProcedures(prev => {
@@ -113,7 +165,6 @@ export default function SurgerySimulator() {
     if (navigator.vibrate) navigator.vibrate(10);
   };
 
-  // --- Utility: data URL to Blob ---
   const dataURLtoBlob = (dataURL) => {
     const arr = dataURL.split(',');
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -123,13 +174,12 @@ export default function SurgerySimulator() {
     return new Blob([u8arr], { type: mime });
   };
 
-  // --- Utility: get user location ---
   const getUserLocation = () => {
     return new Promise((resolve) => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-          () => resolve({ lat: 28.6139, lon: 77.2090 }), // Delhi fallback
+          () => resolve({ lat: 28.6139, lon: 77.2090 }),
           { timeout: 5000, enableHighAccuracy: false }
         );
       } else {
@@ -138,12 +188,9 @@ export default function SurgerySimulator() {
     });
   };
 
-  // --- Save Preview ---
   const handleSavePreview = () => {
     if (!photoZoneRef.current) return;
     setIsSaving(true);
-
-    // setTimeout to let UI show spinner before blocking operation
     setTimeout(() => {
       try {
         const dataUrl = photoZoneRef.current.getCompositeDataUrl(
@@ -151,8 +198,6 @@ export default function SurgerySimulator() {
           goldenRatioReport?.overallScore || 0
         );
         if (!dataUrl) return;
-
-        // Try Web Share API with files
         if (navigator.share && navigator.canShare) {
           const blob = dataURLtoBlob(dataUrl);
           const file = new File([blob], 'celure-surgery-simulation.jpg', { type: 'image/jpeg' });
@@ -165,8 +210,6 @@ export default function SurgerySimulator() {
             return;
           }
         }
-
-        // Fallback: download
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = 'celure-surgery-simulation.jpg';
@@ -179,11 +222,9 @@ export default function SurgerySimulator() {
     }, 0);
   };
 
-  // --- Book Consultation ---
   const handleBookConsultation = async () => {
     setIsBooking(true);
     try {
-      // Generate composite image and upload
       let compositeUrl = null;
       if (photoZoneRef.current) {
         const dataUrl = photoZoneRef.current.getCompositeDataUrl(
@@ -198,8 +239,6 @@ export default function SurgerySimulator() {
           setCompositeImageUrl(compositeUrl);
         }
       }
-
-      // Get location + find clinics
       const { lat, lon } = await getUserLocation();
       const result = findNearestClinics(clinics, lat, lon, selectedProcedures);
       setMatchedClinics(result.clinics);
@@ -212,7 +251,6 @@ export default function SurgerySimulator() {
     }
   };
 
-  // --- Create lead (called from ClinicResultsModal) ---
   const handleCreateLead = async (clinicId, consentGiven) => {
     try {
       const user = await base44.auth.me();
@@ -231,7 +269,6 @@ export default function SurgerySimulator() {
     }
   };
 
-  // --- Loading state ---
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -240,16 +277,12 @@ export default function SurgerySimulator() {
     );
   }
 
-  // --- Under 18 block ---
   if (userAge !== null && userAge < 18) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2">This feature is available for users aged 18+.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-pink-500 text-sm mt-4"
-          >
+          <button onClick={() => navigate('/')} className="text-pink-500 text-sm mt-4">
             Go back home
           </button>
         </div>
@@ -257,7 +290,6 @@ export default function SurgerySimulator() {
     );
   }
 
-  // --- Disclaimer gate ---
   if (!disclaimerAccepted) {
     return (
       <DisclaimerModal
@@ -268,44 +300,108 @@ export default function SurgerySimulator() {
     );
   }
 
-  // --- Recommended procedures (score < 70) ---
   const recommendedProcedureNames = (goldenRatioReport?.metrics || [])
     .filter(m => m.score < 70 && m.relatedProcedure)
     .map(m => m.relatedProcedure);
 
-  return (
-    <div className="min-h-screen bg-black text-white pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/90 backdrop-blur border-b border-gray-900 px-4 py-4 flex items-center justify-between">
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 rounded-full bg-gray-900"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-        </button>
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-pink-500" />
-          <span className="font-semibold">Surgery Simulator</span>
-        </div>
+  const Header = () => (
+    <div className="sticky top-0 z-50 bg-black/90 backdrop-blur border-b border-gray-900 px-4 py-4 flex items-center justify-between">
+      <button
+        onClick={() => step === 'results' ? setStep('upload') : navigate('/')}
+        className="p-2 rounded-full bg-gray-900"
+      >
+        <ArrowLeft className="w-5 h-5 text-white" />
+      </button>
+      <div className="flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-pink-500" />
+        <span className="font-semibold">Surgery Simulator</span>
+      </div>
+      {step === 'results' ? (
         <button
           onClick={() => setShowLandmarks(!showLandmarks)}
           className="p-2 rounded-full bg-gray-900"
         >
           <Eye className={`w-5 h-5 ${showLandmarks ? 'text-pink-500' : 'text-gray-400'}`} />
         </button>
-      </div>
+      ) : (
+        <div className="w-9" />
+      )}
+    </div>
+  );
 
-      {/* Photo Zone */}
+  // --- Step 1: Photo Upload ---
+  if (step === 'upload') {
+    return (
+      <div className="min-h-screen bg-black text-white pb-24">
+        <Header />
+        <MultiPhotoUpload
+          scanPhotos={scanPhotos}
+          initialFrontPhoto={initialFrontPhoto}
+          onPhotosReady={handlePhotosReady}
+        />
+      </div>
+    );
+  }
+
+  // --- Step 2: AI Analysis + Before/After ---
+  return (
+    <div className="min-h-screen bg-black text-white pb-24">
+      <Header />
+
+      {/* Before/After (front photo) */}
       <div className="px-4 pt-4">
         <PhotoZone
           ref={photoZoneRef}
           procedures={selectedProcedures}
           intensity={intensity}
           showLandmarks={showLandmarks}
-          analysisPhotoUrl={analysisPhotoUrl}
           photoUrl={photoUrl}
-          onGoldenRatioComputed={setGoldenRatioReport}
+          onGoldenRatioComputed={handleGoldenRatioComputed}
         />
+      </div>
+
+      {/* Profile thumbnails */}
+      {(uploadedPhotos.right || uploadedPhotos.left) && (
+        <div className="px-4 mt-3">
+          <div className="flex gap-3">
+            {uploadedPhotos.right && (
+              <div className="flex-1">
+                <img src={uploadedPhotos.right} alt="Right profile" className="w-full h-24 rounded-xl object-cover" />
+                <p className="text-[10px] text-gray-500 text-center mt-1">Right Profile</p>
+              </div>
+            )}
+            {uploadedPhotos.left && (
+              <div className="flex-1">
+                <img src={uploadedPhotos.left} alt="Left profile" className="w-full h-24 rounded-xl object-cover" />
+                <p className="text-[10px] text-gray-500 text-center mt-1">Left Profile</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AI Analysis */}
+      <div className="px-4 mt-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Brain className="w-4 h-4 text-pink-500" />
+            <h3 className="text-sm font-semibold">AI Analysis</h3>
+          </div>
+          {analyzingAI ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 text-pink-500 animate-spin" />
+              <p className="text-sm text-gray-400">Analyzing facial features...</p>
+            </div>
+          ) : aiAnalysis ? (
+            <p className="text-sm text-gray-300 leading-relaxed">{aiAnalysis}</p>
+          ) : goldenRatioReport ? (
+            <p className="text-sm text-gray-400">
+              Based on your golden ratio analysis, procedures have been suggested below.
+            </p>
+          ) : (
+            <p className="text-sm text-gray-500">Waiting for face analysis to complete...</p>
+          )}
+        </div>
       </div>
 
       {/* Golden Ratio Panel */}
@@ -319,16 +415,15 @@ export default function SurgerySimulator() {
           />
         ) : (
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-center">
-            <p className="text-xs text-gray-500">
-              Upload a photo to see your Facial Harmony Score
-            </p>
+            <p className="text-xs text-gray-500">Analyzing facial harmony...</p>
           </div>
         )}
       </div>
 
-      {/* Procedure Selector */}
+      {/* AI-Suggested Procedures */}
       <div className="px-4 mt-6">
-        <h3 className="text-sm font-semibold mb-3">Procedures</h3>
+        <h3 className="text-sm font-semibold mb-1">AI-Suggested Procedures</h3>
+        <p className="text-xs text-gray-500 mb-3">Auto-selected based on your analysis. Tap to refine.</p>
         <ProcedureSelector
           procedures={procedures}
           selectedProcedures={selectedProcedures}
