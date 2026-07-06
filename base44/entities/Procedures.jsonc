@@ -1,0 +1,103 @@
+{
+  "name": "Procedures",
+  "type": "object",
+  "properties": {
+    "procedure_name": {
+      "type": "string",
+      "description": "Full procedure name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Surgical",
+        "Non-Surgical"
+      ],
+      "description": "Surgical or non-surgical"
+    },
+    "subcategory": {
+      "type": "string",
+      "enum": [
+        "Nose",
+        "Eyes",
+        "Jaw & Chin",
+        "Cheeks",
+        "Lips",
+        "Forehead & Brow",
+        "Full Face",
+        "Neck",
+        "Ears"
+      ],
+      "description": "Facial area"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Short description shown in selector card"
+    },
+    "golden_ratio_metric": {
+      "type": "string",
+      "description": "Which golden ratio this procedure improves"
+    },
+    "average_cost_inr_min": {
+      "type": "number",
+      "description": "Minimum average cost in INR"
+    },
+    "average_cost_inr_max": {
+      "type": "number",
+      "description": "Maximum average cost in INR"
+    },
+    "recovery_days": {
+      "type": "number",
+      "description": "Recovery time in days (0 for non-surgical)"
+    },
+    "warp_config": {
+      "type": "object",
+      "properties": {
+        "target_landmarks": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "warp_type": {
+          "type": "string"
+        },
+        "axis": {
+          "type": "string"
+        },
+        "max_intensity": {
+          "type": "number"
+        }
+      },
+      "description": "Landmark indices and warp vectors for the mesh warp engine"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this procedure is active"
+    }
+  },
+  "required": [
+    "procedure_name",
+    "category",
+    "subcategory"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

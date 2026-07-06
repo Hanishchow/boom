@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
-import { Camera, Package, ChevronRight } from 'lucide-react';
+import { Camera, Package, ChevronRight, Sparkles } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -98,6 +98,21 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-semibold mb-1">Skin Scan</h3>
                 <p className="text-sm text-gray-400">Analyze your skin and get personalized recommendations</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-pink-500 flex-shrink-0" />
+          </div>
+        </Link>
+
+        <Link to="/surgery-simulator">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-pink-500/10">
+                <Sparkles className="w-6 h-6 text-pink-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Surgery Simulator</h3>
+                <p className="text-sm text-gray-400">Preview cosmetic procedure outcomes with AI</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-pink-500 flex-shrink-0" />

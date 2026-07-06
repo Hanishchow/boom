@@ -14,7 +14,7 @@ function Footer() {
 }
 
 export default function Layout({ children, currentPageName }) {
-  const hideNav = ['SkinAnalysis'].includes(currentPageName);
+  const hideNav = ['SkinAnalysis', 'SurgerySimulator'].includes(currentPageName);
 
   return (
     <div className="min-h-screen bg-black text-white">

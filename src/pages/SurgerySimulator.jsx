@@ -1,0 +1,398 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
+import { ArrowLeft, Sparkles, Eye, Save, MapPin, Loader2 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import DisclaimerModal from '@/components/surgery/DisclaimerModal';
+import PhotoZone from '@/components/surgery/PhotoZone';
+import ProcedureSelector from '@/components/surgery/ProcedureSelector';
+import GoldenRatioPanel from '@/components/surgery/GoldenRatioPanel';
+import ClinicResultsModal from '@/components/surgery/ClinicResultsModal';
+import { findNearestClinics } from '@/lib/clinicMatcher';
+
+export default function SurgerySimulator() {
+  const navigate = useNavigate();
+  const photoZoneRef = useRef(null);
+
+  const [loading, setLoading] = useState(true);
+  const [procedures, setProcedures] = useState([]);
+  const [clinics, setClinics] = useState([]);
+  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [intensity, setIntensity] = useState(0.6);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [goldenRatioReport, setGoldenRatioReport] = useState(null);
+  const [userAge, setUserAge] = useState(null);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [analysisPhotoUrl, setAnalysisPhotoUrl] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [showClinicModal, setShowClinicModal] = useState(false);
+  const [matchedClinics, setMatchedClinics] = useState([]);
+  const [clinicNote, setClinicNote] = useState(null);
+  const [compositeImageUrl, setCompositeImageUrl] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+  const [panelExpanded, setPanelExpanded] = useState(false);
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      // Check URL for photo param (from Results page)
+      const urlParams = new URLSearchParams(window.location.search);
+      const photoParam = urlParams.get('photo');
+      if (photoParam) setPhotoUrl(photoParam);
+
+      // Check disclaimer
+      const dismissed = localStorage.getItem('surgery_simulator_dismissed') === 'true';
+      setDisclaimerAccepted(dismissed);
+
+      // Load procedures and clinics in parallel
+      const [procs, clins] = await Promise.all([
+        base44.entities.Procedures.filter({ is_active: true }),
+        base44.entities.PartnerClinics.filter({ is_active: true })
+      ]);
+      setProcedures(procs);
+      setClinics(clins);
+
+      // Load user profile for DOB + analysis photo
+      const user = await base44.auth.me();
+      const profiles = await base44.entities.SkinProfile.filter(
+        { created_by: user.email },
+        '-created_date',
+        1
+      );
+
+      if (profiles.length > 0) {
+        const profile = profiles[0];
+        if (profile.dob) {
+          const birth = new Date(profile.dob);
+          const age = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 3600 * 1000));
+          setUserAge(age);
+        }
+        if (profile.front_image_url || profile.face_image_url) {
+          setAnalysisPhotoUrl(profile.front_image_url || profile.face_image_url);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptDisclaimer = async () => {
+    localStorage.setItem('surgery_simulator_dismissed', 'true');
+    try {
+      await base44.auth.updateMe({ surgery_simulator_disclaimer_accepted: true });
+    } catch (e) { /* non-critical */ }
+    setDisclaimerAccepted(true);
+  };
+
+  const handleToggleProcedure = useCallback((procedure) => {
+    setSelectedProcedures(prev => {
+      const exists = prev.find(p => p.id === procedure.id);
+      if (exists) return prev.filter(p => p.id !== procedure.id);
+      if (prev.length >= 3) return prev;
+      return [...prev, procedure];
+    });
+  }, []);
+
+  const handleMetricTap = useCallback((relatedProcedureName) => {
+    if (!relatedProcedureName) return;
+    const proc = procedures.find(p => p.procedure_name === relatedProcedureName);
+    if (proc && !selectedProcedures.find(p => p.id === proc.id)) {
+      setSelectedProcedures(prev => prev.length >= 3 ? prev : [...prev, proc]);
+    }
+  }, [procedures, selectedProcedures]);
+
+  const handleIntensityChange = (value) => {
+    const snapped = Math.round(value[0] * 4) / 4;
+    setIntensity(snapped);
+    if (navigator.vibrate) navigator.vibrate(10);
+  };
+
+  // --- Utility: data URL to Blob ---
+  const dataURLtoBlob = (dataURL) => {
+    const arr = dataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new Blob([u8arr], { type: mime });
+  };
+
+  // --- Utility: get user location ---
+  const getUserLocation = () => {
+    return new Promise((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+          () => resolve({ lat: 28.6139, lon: 77.2090 }), // Delhi fallback
+          { timeout: 5000, enableHighAccuracy: false }
+        );
+      } else {
+        resolve({ lat: 28.6139, lon: 77.2090 });
+      }
+    });
+  };
+
+  // --- Save Preview ---
+  const handleSavePreview = () => {
+    if (!photoZoneRef.current) return;
+    setIsSaving(true);
+
+    // setTimeout to let UI show spinner before blocking operation
+    setTimeout(() => {
+      try {
+        const dataUrl = photoZoneRef.current.getCompositeDataUrl(
+          selectedProcedures.map(p => p.procedure_name),
+          goldenRatioReport?.overallScore || 0
+        );
+        if (!dataUrl) return;
+
+        // Try Web Share API with files
+        if (navigator.share && navigator.canShare) {
+          const blob = dataURLtoBlob(dataUrl);
+          const file = new File([blob], 'celure-surgery-simulation.jpg', { type: 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            navigator.share({
+              files: [file],
+              title: 'Célure Surgery Simulation',
+              text: 'Check out my surgery simulation on Célure AI!'
+            }).catch(() => {});
+            return;
+          }
+        }
+
+        // Fallback: download
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'celure-surgery-simulation.jpg';
+        link.click();
+      } catch (err) {
+        console.error('Save preview failed:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 0);
+  };
+
+  // --- Book Consultation ---
+  const handleBookConsultation = async () => {
+    setIsBooking(true);
+    try {
+      // Generate composite image and upload
+      let compositeUrl = null;
+      if (photoZoneRef.current) {
+        const dataUrl = photoZoneRef.current.getCompositeDataUrl(
+          selectedProcedures.map(p => p.procedure_name),
+          goldenRatioReport?.overallScore || 0
+        );
+        if (dataUrl) {
+          const blob = dataURLtoBlob(dataUrl);
+          const file = new File([blob], 'simulation.jpg', { type: 'image/jpeg' });
+          const result = await base44.integrations.Core.UploadFile({ file });
+          compositeUrl = result.file_url;
+          setCompositeImageUrl(compositeUrl);
+        }
+      }
+
+      // Get location + find clinics
+      const { lat, lon } = await getUserLocation();
+      const result = findNearestClinics(clinics, lat, lon, selectedProcedures);
+      setMatchedClinics(result.clinics);
+      setClinicNote(result.note);
+      setShowClinicModal(true);
+    } catch (err) {
+      console.error('Booking error:', err);
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  // --- Create lead (called from ClinicResultsModal) ---
+  const handleCreateLead = async (clinicId, consentGiven) => {
+    try {
+      const user = await base44.auth.me();
+      await base44.entities.SimulationLead.create({
+        user_id: user.id,
+        procedure_names: selectedProcedures.map(p => p.procedure_name),
+        intensity,
+        harmony_score: goldenRatioReport?.overallScore || 0,
+        simulation_image_url: consentGiven ? compositeImageUrl : null,
+        clinic_id: clinicId,
+        consent_given: consentGiven,
+        status: 'pending'
+      });
+    } catch (err) {
+      console.error('Failed to create lead:', err);
+    }
+  };
+
+  // --- Loading state ---
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // --- Under 18 block ---
+  if (userAge !== null && userAge < 18) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">This feature is available for users aged 18+.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="text-pink-500 text-sm mt-4"
+          >
+            Go back home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Disclaimer gate ---
+  if (!disclaimerAccepted) {
+    return (
+      <DisclaimerModal
+        userAge={userAge}
+        onAccept={handleAcceptDisclaimer}
+        onGoBack={() => navigate('/')}
+      />
+    );
+  }
+
+  // --- Recommended procedures (score < 70) ---
+  const recommendedProcedureNames = (goldenRatioReport?.metrics || [])
+    .filter(m => m.score < 70 && m.relatedProcedure)
+    .map(m => m.relatedProcedure);
+
+  return (
+    <div className="min-h-screen bg-black text-white pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-black/90 backdrop-blur border-b border-gray-900 px-4 py-4 flex items-center justify-between">
+        <button
+          onClick={() => navigate('/')}
+          className="p-2 rounded-full bg-gray-900"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-pink-500" />
+          <span className="font-semibold">Surgery Simulator</span>
+        </div>
+        <button
+          onClick={() => setShowLandmarks(!showLandmarks)}
+          className="p-2 rounded-full bg-gray-900"
+        >
+          <Eye className={`w-5 h-5 ${showLandmarks ? 'text-pink-500' : 'text-gray-400'}`} />
+        </button>
+      </div>
+
+      {/* Photo Zone */}
+      <div className="px-4 pt-4">
+        <PhotoZone
+          ref={photoZoneRef}
+          procedures={selectedProcedures}
+          intensity={intensity}
+          showLandmarks={showLandmarks}
+          analysisPhotoUrl={analysisPhotoUrl}
+          photoUrl={photoUrl}
+          onGoldenRatioComputed={setGoldenRatioReport}
+        />
+      </div>
+
+      {/* Golden Ratio Panel */}
+      <div className="px-4 mt-4">
+        {goldenRatioReport ? (
+          <GoldenRatioPanel
+            report={goldenRatioReport}
+            onMetricTap={handleMetricTap}
+            isExpanded={panelExpanded}
+            onToggleExpand={() => setPanelExpanded(!panelExpanded)}
+          />
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-center">
+            <p className="text-xs text-gray-500">
+              Upload a photo to see your Facial Harmony Score
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Procedure Selector */}
+      <div className="px-4 mt-6">
+        <h3 className="text-sm font-semibold mb-3">Procedures</h3>
+        <ProcedureSelector
+          procedures={procedures}
+          selectedProcedures={selectedProcedures}
+          onToggleProcedure={handleToggleProcedure}
+          recommendedProcedureNames={recommendedProcedureNames}
+        />
+      </div>
+
+      {/* Intensity Slider */}
+      {selectedProcedures.length > 0 && (
+        <div className="px-4 mt-6">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium">Simulation Intensity</span>
+              <span className="text-sm text-pink-500">{Math.round(intensity * 100)}%</span>
+            </div>
+            <Slider
+              value={[intensity]}
+              onValueChange={handleIntensityChange}
+              min={0}
+              max={1}
+              step={0.25}
+              className="w-full"
+            />
+            <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <span>Subtle</span>
+              <span>Maximum</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Bar */}
+      <div className="px-4 mt-6 flex gap-3">
+        <button
+          onClick={handleSavePreview}
+          disabled={isSaving || !goldenRatioReport}
+          className="flex-1 h-12 bg-gray-900 border border-gray-800 rounded-full flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Preview
+        </button>
+        <button
+          onClick={handleBookConsultation}
+          disabled={isBooking || !goldenRatioReport || selectedProcedures.length === 0}
+          className="flex-1 h-12 bg-pink-500 rounded-full flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+        >
+          {isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+          Book Consultation
+        </button>
+      </div>
+
+      {/* Clinic Results Modal */}
+      <ClinicResultsModal
+        isOpen={showClinicModal}
+        onClose={() => setShowClinicModal(false)}
+        clinics={matchedClinics}
+        note={clinicNote}
+        selectedProcedures={selectedProcedures}
+        compositeImageUrl={compositeImageUrl}
+        harmonyScore={goldenRatioReport?.overallScore || 0}
+        intensity={intensity}
+        onCreateLead={handleCreateLead}
+      />
+    </div>
+  );
+}

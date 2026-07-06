@@ -219,6 +219,15 @@ export default function Results() {
           <RefreshCw className="w-5 h-5 mr-2" />
           Start New Scan
         </Button>
+
+        {/* Surgery Simulator CTA */}
+        <button
+          onClick={() => navigate(`/surgery-simulator${profile?.face_image_url ? `?photo=${encodeURIComponent(profile.face_image_url)}` : ''}`)}
+          className="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full h-14 flex items-center justify-center gap-2 text-sm font-medium"
+        >
+          <Sparkles className="w-5 h-5" />
+          Explore what cosmetic procedures could enhance your features →
+        </button>
       </div>
     </div>
   );

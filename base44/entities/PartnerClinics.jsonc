@@ -1,0 +1,98 @@
+{
+  "name": "PartnerClinics",
+  "type": "object",
+  "properties": {
+    "clinic_name": {
+      "type": "string",
+      "description": "Clinic or hospital name"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Primary doctor or surgeon name"
+    },
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "lon": {
+      "type": "number",
+      "description": "Longitude"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Contact email"
+    },
+    "website_url": {
+      "type": "string",
+      "description": "Optional website URL"
+    },
+    "procedures_offered": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Nose",
+          "Eyes",
+          "Jaw & Chin",
+          "Cheeks",
+          "Lips",
+          "Forehead & Brow",
+          "Full Face",
+          "Neck",
+          "Ears"
+        ]
+      },
+      "description": "Procedure subcategories offered at this clinic"
+    },
+    "is_verified_partner": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a verified C\u00e9lure partner"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this clinic is active"
+    }
+  },
+  "required": [
+    "clinic_name",
+    "city",
+    "lat",
+    "lon"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
