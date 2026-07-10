@@ -10,6 +10,7 @@ import GoldenRatioPanel from '@/components/surgery/GoldenRatioPanel';
 import ClinicResultsModal from '@/components/surgery/ClinicResultsModal';
 import MultiPhotoUpload from '@/components/surgery/MultiPhotoUpload';
 import { findNearestClinics } from '@/lib/clinicMatcher';
+import { generateLocalAnalysis, buildLLMPrompt } from '@/lib/surgeryAnalysis';
 
 export default function SurgerySimulator() {
   const navigate = useNavigate();
@@ -41,6 +42,15 @@ export default function SurgerySimulator() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analyzingAI, setAnalyzingAI] = useState(false);
 
+  // Refs for stable callbacks (avoid stale closures / re-firing effects)
+  const proceduresRef = useRef(procedures);
+  const userAgeRef = useRef(userAge);
+  const goldenRatioReportRef = useRef(null);
+  const selectedProceduresRef = useRef(selectedProcedures);
+  useEffect(() => { proceduresRef.current = procedures; }, [procedures]);
+  useEffect(() => { userAgeRef.current = userAge; }, [userAge]);
+  useEffect(() => { selectedProceduresRef.current = selectedProcedures; }, [selectedProcedures]);
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -64,10 +74,10 @@ export default function SurgerySimulator() {
       setProcedures(procs);
       setClinics(clins);
 
-      // Load user profile for DOB + scan photos
+      // Load user profile for DOB + scan photos (RLS auto-filters by current user)
       const user = await base44.auth.me();
       const profiles = await base44.entities.SkinProfile.filter(
-        { created_by: user.email },
+        {},
         '-created_date',
         1
       );
@@ -110,37 +120,42 @@ export default function SurgerySimulator() {
   }, []);
 
   // --- Golden ratio computed: auto-select procedures + AI analysis ---
+  // Uses refs for procedures/userAge so the callback identity is stable
+  // and doesn't re-fire the PhotoZone effect when they load.
   const handleGoldenRatioComputed = useCallback((report) => {
     setGoldenRatioReport(report);
+    goldenRatioReportRef.current = report;
     if (!report) return;
 
     // Auto-select recommended procedures based on golden ratio scores
     const recommendedNames = report.metrics
       .filter(m => m.score < 70 && m.relatedProcedure)
       .map(m => m.relatedProcedure);
-    const suggested = procedures.filter(p => recommendedNames.includes(p.procedure_name));
+    const currentProcedures = proceduresRef.current;
+    const suggested = currentProcedures.filter(p => recommendedNames.includes(p.procedure_name));
     if (suggested.length > 0) {
       setSelectedProcedures(prev => {
-        // Only auto-select if user hasn't manually changed yet
         if (prev.length === 0) return suggested.slice(0, 3);
         return prev;
       });
     }
 
-    // AI analysis via InvokeLLM
+    // AI analysis via InvokeLLM with online data extraction
     setAnalyzingAI(true);
-    const metricsSummary = report.metrics
-      .filter(m => m.relatedProcedure)
-      .map(m => `${m.name}: score ${m.score}/100 (ratio ${m.ratio}, ideal ${m.ideal})`)
-      .join('; ');
+    const prompt = buildLLMPrompt(report, suggested.slice(0, 3), userAgeRef.current);
 
     base44.integrations.Core.InvokeLLM({
-      prompt: `You are a cosmetic surgery consultant AI for the Célure app. Based on facial golden ratio analysis with overall harmony score ${report.overallScore}/100 and these metrics: ${metricsSummary}. Provide a brief, professional 2-3 sentence analysis of the facial features and recommend the most beneficial procedures. Be conservative and prioritize natural results. Do not recommend unnecessary procedures.`
+      prompt,
+      add_context_from_internet: true,
+      model: 'gemini_3_flash'
     })
       .then(text => setAiAnalysis(text))
-      .catch(() => setAiAnalysis(null))
+      .catch(() => {
+        // Fallback: local analysis when InvokeLLM is unavailable (credits, network, etc.)
+        setAiAnalysis(generateLocalAnalysis(report, suggested.slice(0, 3)));
+      })
       .finally(() => setAnalyzingAI(false));
-  }, [procedures]);
+  }, []);
 
   const handleToggleProcedure = useCallback((procedure) => {
     setSelectedProcedures(prev => {
@@ -232,11 +247,16 @@ export default function SurgerySimulator() {
           goldenRatioReport?.overallScore || 0
         );
         if (dataUrl) {
-          const blob = dataURLtoBlob(dataUrl);
-          const file = new File([blob], 'simulation.jpg', { type: 'image/jpeg' });
-          const result = await base44.integrations.Core.UploadFile({ file });
-          compositeUrl = result.file_url;
-          setCompositeImageUrl(compositeUrl);
+          try {
+            const blob = dataURLtoBlob(dataUrl);
+            const file = new File([blob], 'simulation.jpg', { type: 'image/jpeg' });
+            const result = await base44.integrations.Core.UploadFile({ file });
+            compositeUrl = result.file_url;
+            setCompositeImageUrl(compositeUrl);
+          } catch (uploadErr) {
+            // UploadFile may fail if credits are exhausted — proceed without uploaded image
+            console.warn('Image upload skipped:', uploadErr);
+          }
         }
       }
       const { lat, lon } = await getUserLocation();
@@ -259,7 +279,7 @@ export default function SurgerySimulator() {
         procedure_names: selectedProcedures.map(p => p.procedure_name),
         intensity,
         harmony_score: goldenRatioReport?.overallScore || 0,
-        simulation_image_url: consentGiven ? compositeImageUrl : null,
+        simulation_image_url: consentGiven && compositeImageUrl ? compositeImageUrl : null,
         clinic_id: clinicId,
         consent_given: consentGiven,
         status: 'pending'

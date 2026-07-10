@@ -133,15 +133,14 @@ const PhotoZone = forwardRef(({
   const { status: faceMeshStatus, detectFace } = useFaceMesh(onFaceMeshResults);
 
   // --- Load image element from URL (shared by both paths) ---
+  // Does NOT depend on faceMeshStatus — always calls detectFace (no-op if not ready).
+  // The useEffect below handles detection when FaceMesh becomes ready later.
   const loadImageElement = useCallback((url, useCrossOrigin = false) => {
     const img = new Image();
-    // Only set crossOrigin for external URLs — blob URLs are same-origin
-    // Setting crossOrigin on a blob URL can cause load failures in some browsers
     if (useCrossOrigin) img.crossOrigin = 'anonymous';
     img.onload = () => {
       imageRef.current = img;
 
-      // Set canvas dimensions based on image, capped for performance
       const isMobile = window.innerWidth < 768;
       const maxDim = isMobile ? 400 : 800;
       const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
@@ -155,22 +154,19 @@ const PhotoZone = forwardRef(({
         }
       });
 
-      // Draw original
       const oCtx = originalCanvasRef.current.getContext('2d');
       oCtx.drawImage(img, 0, 0, w, h);
 
       setPhotoLoaded(true);
 
-      // Detect face if FaceMesh is ready
-      if (faceMeshStatus === 'ready') {
-        detectFace(img);
-      }
+      // Attempt face detection — no-op if FaceMesh isn't ready yet
+      detectFace(img);
     };
     img.onerror = () => {
       setLoadError('Failed to load image. Please try a different photo.');
     };
     img.src = url;
-  }, [faceMeshStatus, detectFace]);
+  }, [detectFace]);
 
   // --- Load photo from File object (camera/upload) ---
   const loadPhotoFromFile = useCallback((file) => {
