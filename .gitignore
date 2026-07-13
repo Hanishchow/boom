@@ -38,3 +38,4 @@ __pycache__/
 *.xlsx
 *.xlsm
 pipeline/reports/
+base44/.app.jsonc
