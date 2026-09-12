@@ -69,6 +69,11 @@
       "type": "boolean",
       "default": true,
       "description": "Whether this clinic is active"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional notes or additional context about the clinic"
     }
   },
   "required": [
