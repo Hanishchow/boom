@@ -13,6 +13,7 @@ import Selfies from './pages/Selfies';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import SurgerySimulator from './pages/SurgerySimulator';
+import DermatologistFlow from './pages/DermatologistFlow';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
         <Route path="/About" element={<LayoutWrapper currentPageName="About"><About /></LayoutWrapper>} />
         <Route path="/Contact" element={<LayoutWrapper currentPageName="Contact"><Contact /></LayoutWrapper>} />
         <Route path="/surgery-simulator" element={<LayoutWrapper currentPageName="SurgerySimulator"><SurgerySimulator /></LayoutWrapper>} />
+        <Route path="/dermatologist-flow" element={<DermatologistFlow />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

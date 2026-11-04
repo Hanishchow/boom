@@ -234,6 +234,48 @@
       "type": "number",
       "description": "Overall AI analysis confidence score (0-100)"
     },
+    "severity_tier": {
+      "type": "string",
+      "enum": [
+        "mild",
+        "moderate",
+        "severe"
+      ],
+      "description": "Acne severity triage tier (mild, moderate, severe)"
+    },
+    "severity_lesion_estimate": {
+      "type": "number",
+      "description": "Estimated number of acne lesions from triage"
+    },
+    "severity_key_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key findings from the acne severity triage"
+    },
+    "severity_affected_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Facial zones affected by acne (from triage)"
+    },
+    "severity_topics_to_discuss": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Topics to discuss with a dermatologist (severe tier)"
+    },
+    "severity_confidence": {
+      "type": "number",
+      "description": "Confidence score of the severity triage (0-1)"
+    },
+    "severity_scan_date": {
+      "type": "string",
+      "description": "ISO timestamp when the severity triage was performed"
+    },
     "is_complete": {
       "type": "boolean",
       "description": "Whether the profile has completed the full onboarding flow"

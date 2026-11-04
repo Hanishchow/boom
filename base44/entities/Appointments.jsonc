@@ -1,0 +1,138 @@
+{
+  "name": "Appointments",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID who booked the appointment"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "Reference to the SkinProfile scan this booking came from"
+    },
+    "clinic_place_id": {
+      "type": "string",
+      "description": "Google Place ID of the selected clinic"
+    },
+    "clinic_name": {
+      "type": "string",
+      "description": "Clinic name"
+    },
+    "clinic_address": {
+      "type": "string",
+      "description": "Clinic address"
+    },
+    "clinic_lat": {
+      "type": "number",
+      "description": "Clinic latitude"
+    },
+    "clinic_lon": {
+      "type": "number",
+      "description": "Clinic longitude"
+    },
+    "clinic_rating": {
+      "type": "number",
+      "description": "Clinic rating from Google"
+    },
+    "clinic_uri": {
+      "type": "string",
+      "description": "Google Maps URI for the clinic"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Name of the patient"
+    },
+    "patient_phone": {
+      "type": "string",
+      "description": "Contact phone number for the patient"
+    },
+    "preferred_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Preferred appointment date"
+    },
+    "preferred_time_slot": {
+      "type": "string",
+      "description": "Preferred time slot"
+    },
+    "report_file_uri": {
+      "type": "string",
+      "description": "Private file URI of the attached diagnosis report PDF"
+    },
+    "scan_photo_url": {
+      "type": "string",
+      "description": "Scan photo reference (private file URI) attached to the booking"
+    },
+    "severity_tier": {
+      "type": "string",
+      "enum": [
+        "mild",
+        "moderate",
+        "severe"
+      ],
+      "description": "Severity tier at the time of booking"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed"
+      ],
+      "default": "pending",
+      "description": "Appointment status"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional notes for the appointment"
+    }
+  },
+  "required": [
+    "clinic_name",
+    "patient_name",
+    "patient_phone"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

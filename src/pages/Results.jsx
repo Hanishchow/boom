@@ -125,6 +125,14 @@ export default function Results() {
         )}
       </div>
 
+      {/* Moderate severity soft note */}
+      {profile?.severity_tier === 'moderate' && (
+        <div className="mx-4 mb-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-amber-300 text-xs">If this doesn't improve in 6-8 weeks, consider seeing a dermatologist.</p>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex mx-4 bg-gray-900 rounded-2xl p-1 mb-6">
         {TABS.map(tab => (

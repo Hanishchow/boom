@@ -16,6 +16,7 @@ import {
   deriveBudget
 } from '@/components/skincare/SkinAnalysisEngine';
 import { logAuditEvent } from '@/lib/auditLogger';
+import { classifyAcneSeverity } from '@/lib/severityTriage';
 import { useGenderTheme } from '@/lib/GenderThemeContext';
 import { useAqi } from '@/hooks/useAqi';
 
@@ -120,6 +121,26 @@ export default function SkinAnalysis() {
         }
       }
 
+      setAnalysisProgress('Assessing acne severity...');
+      let triageResult;
+      try {
+        let signedFrontUrl = null;
+        if (frontImageUrl) {
+          try {
+            const signed = await base44.integrations.Core.CreateFileSignedUrl({ file_uri: frontImageUrl });
+            signedFrontUrl = signed?.signed_url || null;
+          } catch (e) { console.warn('signed url failed', e); }
+        }
+        triageResult = await classifyAcneSeverity({
+          frontImageSignedUrl: signedFrontUrl,
+          detectedConcerns: imageAnalysis?.detected_concerns || [],
+          questionnaireData: qData
+        });
+      } catch (e) {
+        console.warn('Triage failed, defaulting to mild:', e);
+        triageResult = { severity_tier: 'mild', lesion_estimate: 0, key_findings: [], affected_zones: [], topics_to_discuss: [], confidence: 0, scan_date: new Date().toISOString() };
+      }
+
       setAnalysisProgress('Creating your skin profile...');
       const skinProfile = synthesizeSkinProfile(questionnaireAnalysis, imageAnalysis);
 
@@ -176,6 +197,13 @@ export default function SkinAnalysis() {
         overall_skin_condition: imageAnalysis?.overall_skin_assessment?.overall_condition || '',
         hydration_level: imageAnalysis?.overall_skin_assessment?.hydration_level || '',
         analysis_confidence: imageAnalysis?.analysis_confidence || null,
+        severity_tier: triageResult.severity_tier,
+        severity_lesion_estimate: triageResult.lesion_estimate,
+        severity_key_findings: triageResult.key_findings,
+        severity_affected_zones: triageResult.affected_zones,
+        severity_topics_to_discuss: triageResult.topics_to_discuss,
+        severity_confidence: triageResult.confidence,
+        severity_scan_date: triageResult.scan_date,
         is_complete: true
       };
 
@@ -232,8 +260,12 @@ export default function SkinAnalysis() {
         console.error('Profile save failed, continuing to analysis:', saveErr);
       }
 
-      // Always navigate to results — a failed save should not block the user
-      navigate(createPageUrl('Results') + (savedProfileId ? `?profile=${savedProfileId}` : ''));
+      // Route based on severity: severe → dermatologist flow; otherwise → existing results
+      if (triageResult.severity_tier === 'severe' && savedProfileId) {
+        navigate(`/dermatologist-flow?profile=${savedProfileId}`);
+      } else {
+        navigate(createPageUrl('Results') + (savedProfileId ? `?profile=${savedProfileId}` : ''));
+      }
 
     } catch (error) {
       console.error('Analysis error:', error);
