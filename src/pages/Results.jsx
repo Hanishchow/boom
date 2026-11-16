@@ -10,6 +10,7 @@ import { logAuditEvent } from '@/lib/auditLogger';
 import SkinMetricsCard from '@/components/skincare/SkinMetricsCard';
 import RoutineDisplay from '@/components/skincare/RoutineDisplay';
 import ProductRecommendations from '@/components/skincare/ProductRecommendations';
+import SaveResultsPrompt from '@/components/skincare/SaveResultsPrompt';
 
 const TABS = ['Overview', 'Routine', 'Products'];
 
@@ -124,6 +125,14 @@ export default function Results() {
           </div>
         )}
       </div>
+
+      {/* Save name / DOB after the result is shown */}
+      {profile && (!profile.name || !profile.dob) ? (
+        <SaveResultsPrompt
+          profile={profile}
+          onSaved={(update) => setProfile({ ...profile, ...update })}
+        />
+      ) : null}
 
       {/* Moderate severity soft note */}
       {profile?.severity_tier === 'moderate' && (

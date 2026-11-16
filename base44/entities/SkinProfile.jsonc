@@ -130,7 +130,26 @@
         "semi_healthy",
         "junk_food"
       ],
-      "description": "User's diet type"
+      "description": "User's diet type (healthy=mostly home-cooked, semi_healthy=mixed, junk_food=mostly outside/fried)"
+    },
+    "food_preference": {
+      "type": "string",
+      "enum": [
+        "vegetarian",
+        "non_vegetarian",
+        "vegan"
+      ],
+      "description": "Vegetarian / non-vegetarian / vegan food preference"
+    },
+    "dairy_intake": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "moderate",
+        "high"
+      ],
+      "description": "Daily dairy intake level"
     },
     "sun_exposure": {
       "type": "string",
@@ -187,6 +206,10 @@
     "budget_max_inr": {
       "type": "number",
       "description": "AI-derived maximum monthly budget in INR"
+    },
+    "monthly_budget_inr": {
+      "type": "number",
+      "description": "User-entered monthly skincare budget in INR"
     },
     "budget_reasoning": {
       "type": "string",

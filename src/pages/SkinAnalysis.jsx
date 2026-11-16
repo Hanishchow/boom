@@ -51,19 +51,17 @@ export default function SkinAnalysis() {
       if (profiles.length > 0) {
         const p = profiles[0];
         setPrefillData({
-          name: p.name || '',
-          email: p.email || '',
-          gender: p.gender || '',
-          age_group: p.age_group || '',
           skin_type: p.skin_type || '',
           skin_types: p.skin_types || (p.skin_type ? [p.skin_type] : []),
-          diet_type: p.diet_type || '',
+          gender: p.gender || '',
           allergies: p.allergies || '',
+          concerns: p.primary_concerns || [],
+          diet_type: p.diet_type || '',
+          food_preference: p.food_preference || '',
+          dairy_intake: p.dairy_intake || '',
+          monthly_budget_inr: p.monthly_budget_inr || '',
           location_city: p.location_city || '',
-          pincode: p.pincode || '',
-          budget_range: p.budget_range || 'mid-range',
-          budget_amount: p.budget_amount || 1500,
-          concerns: p.primary_concerns || []
+          pincode: p.pincode || ''
         });
       }
     } catch (err) {
@@ -106,7 +104,7 @@ export default function SkinAnalysis() {
             leftImage: images.left?.data || null,
             // Full GNN input payload (Section 6)
             gender: qData.gender || null,
-            age_years: qData.calculated_age || null,
+            age_years: null,
             diet_type: qData.diet_type || null,
             skin_concerns: qData.concerns || [],
             aqi_index: aqiData?.aqi_index ?? null,
@@ -158,26 +156,31 @@ export default function SkinAnalysis() {
       setAnalysisProgress('Saving your profile...');
       await logAuditEvent({ action: 'analysis_completed', resourceType: 'SkinProfile', metadata: { has_image: !!(images?.front) }, success: true });
 
-      // Get user_id for linking records
+      // Get user_id and email for linking records
       let userId = '';
+      let currentUserEmail = '';
       try {
         const currentUser = await base44.auth.me();
         userId = currentUser?.id || currentUser?.email || '';
+        currentUserEmail = currentUser?.email || '';
       } catch (e) {}
 
       const profileData = {
-        // Identity
+        // Identity — name/DOB are collected AFTER the result is shown; email comes from the signed-in account
         user_id: userId,
-        name: qData.name || '',
-        email: qData.email || '',
-        dob: qData.dob || '',
-        calculated_age: qData.calculated_age || null,
+        name: '',
+        email: currentUserEmail,
+        dob: '',
+        calculated_age: null,
         gender: qData.gender || '',
-        age_group: qData.age_group || '',
+        age_group: '',
         // Skin data
         ...skinProfile,
         skin_types: qData.skin_types || [],
         diet_type: qData.diet_type || '',
+        food_preference: qData.food_preference || '',
+        dairy_intake: qData.dairy_intake || '',
+        monthly_budget_inr: qData.monthly_budget_inr ? Number(qData.monthly_budget_inr) : null,
         allergies: qData.allergies || '',
         // Location
         location_city: qData.location_city || '',

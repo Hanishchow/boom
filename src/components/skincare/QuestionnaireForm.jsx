@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { ChevronLeft } from 'lucide-react';
 import { sanitizeQuestionnaireData } from '@/lib/inputSanitizer';
 import { useGenderTheme } from '@/lib/GenderThemeContext';
+
+const DRAFT_KEY = 'celure_q_draft';
 
 const SKIN_TYPES = [
   { value: 'dry', label: 'Dry', desc: 'Tight, flaky, dull' },
@@ -28,50 +30,68 @@ const SKIN_CONCERNS = [
   { value: 'uneven_tone', label: 'Uneven Tone' }
 ];
 
-const STEPS = [
-  { id: 'personal', title: 'Personal Info', description: "Let's personalize your experience" },
-  { id: 'skin', title: 'Skin Profile', description: 'Select all that apply — we support multiple skin types' },
-  { id: 'concerns', title: 'Skin Concerns & Diet', description: 'What are your main skin concerns?' },
-  { id: 'location', title: 'Your Location', description: 'For AQI & pollution-based recommendations' }
+// Indian-context diet labels. Values stay mapped to the entity enum for backend compatibility.
+const DIET_OPTIONS = [
+  { value: 'healthy', label: 'Mostly home-cooked', desc: 'Fresh, home-prepared meals' },
+  { value: 'semi_healthy', label: 'Mixed', desc: 'Home-cooked plus some outside food' },
+  { value: 'junk_food', label: 'Mostly outside / fried food', desc: 'Frequent restaurant, fried or processed food' }
 ];
 
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const FOOD_PREFERENCE = [
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'non_vegetarian', label: 'Non-vegetarian' },
+  { value: 'vegan', label: 'Vegan' }
+];
 
-const calcAge = (dob) => {
-  if (!dob) return null;
-  const today = new Date();
-  const birth = new Date(dob);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-};
+const DAIRY_INTAKE = [
+  { value: 'none', label: 'None' },
+  { value: 'low', label: 'Low' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'high', label: 'High' }
+];
 
-const ageToGroup = (age) => {
-  if (age < 20) return 'under_20';
-  if (age < 30) return '20_30';
-  if (age < 40) return '30_40';
-  if (age < 50) return '40_50';
-  return 'above_50';
+// Flow order: skin type -> concerns (+ lifestyle) -> city -> [consent/selfies handled by SelfieCapture] -> result
+const STEPS = [
+  { id: 'skin', title: 'Your Skin', description: 'Select all that apply — you can have more than one skin type' },
+  { id: 'concerns', title: 'Concerns & Lifestyle', description: 'Tell us about your skin and daily habits' },
+  { id: 'city', title: 'Your City', description: 'For AQI & pollution-based recommendations' }
+];
+
+const defaultData = {
+  skin_types: [],
+  skin_type: '',
+  gender: '',
+  allergies: '',
+  concerns: [],
+  diet_type: '',
+  food_preference: '',
+  dairy_intake: '',
+  monthly_budget_inr: '',
+  location_city: '',
+  pincode: ''
 };
 
 export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
   const { applyGenderTheme } = useGenderTheme();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [emailError, setEmailError] = useState('');
-  const [data, setData] = useState({
-    name: prefillData?.name || '',
-    email: prefillData?.email || '',
-    gender: prefillData?.gender || '',
-    dob: '',
-    skin_types: prefillData?.skin_types || [],
-    skin_type: prefillData?.skin_type || '',
-    allergies: prefillData?.allergies || '',
-    concerns: prefillData?.concerns || [],
-    diet_type: prefillData?.diet_type || '',
-    location_city: prefillData?.location_city || '',
-    pincode: prefillData?.pincode || ''
+
+  // Restore in-progress draft so a refresh / dropped connection does not lose it.
+  const draft = (() => {
+    try { const s = localStorage.getItem(DRAFT_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+  })();
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    const s = draft?._step;
+    return typeof s === 'number' && s >= 0 && s <= STEPS.length - 1 ? s : 0;
   });
+  const [data, setData] = useState(() => ({
+    ...defaultData,
+    ...(draft || prefillData || {})
+  }));
+
+  // Persist on every change.
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...data, _step: currentStep })); } catch (e) {}
+  }, [data, currentStep]);
 
   const step = STEPS[currentStep];
 
@@ -91,64 +111,53 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
     setData({ ...data, concerns: updated });
   };
 
-  const handleEmailChange = (e) => {
-    const val = e.target.value;
-    setData({ ...data, email: val });
-    if (val && !isValidEmail(val)) {
-      setEmailError('Please enter a valid email address');
-    } else {
-      setEmailError('');
+  // Returns the specific reason Next is disabled for the current step (empty when OK).
+  const missingReason = () => {
+    if (currentStep === 0) {
+      if (!(data.skin_types || []).length) return 'Please select at least one skin type';
     }
-  };
-
-  const canProceed = () => {
-    if (currentStep === 0) return data.email && isValidEmail(data.email) && data.gender && data.dob;
-    if (currentStep === 1) return data.skin_types?.length > 0;
+    if (currentStep === 1) {
+      if (!(data.concerns || []).length) return 'Please select at least one skin concern';
+      if (!data.diet_type) return 'Please select your diet type';
+      if (!data.food_preference) return 'Please select your food preference';
+      if (!data.dairy_intake) return 'Please select your dairy intake';
+      if (!data.monthly_budget_inr) return 'Please enter your monthly skincare budget';
+    }
     if (currentStep === 2) {
-      const hasConcerns = Array.isArray(data.concerns)
-        ? data.concerns.length > 0
-        : (typeof data.concerns === 'string' && data.concerns.trim().length > 0);
-      return hasConcerns && data.diet_type;
+      if (!data.location_city) return 'Please enter your city';
     }
-    if (currentStep === 3) return data.location_city;
-    return true;
+    return '';
   };
+  const canProceed = () => !missingReason();
+  const reason = missingReason();
 
   const handleNext = () => {
-    if (currentStep === 2) {
-      const hasConcerns = Array.isArray(data.concerns)
-        ? data.concerns.length > 0
-        : (typeof data.concerns === 'string' && data.concerns.trim().length > 0);
-      if (!hasConcerns || !data.diet_type) return;
-    }
+    if (!canProceed()) return;
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      const age = calcAge(data.dob);
       const sanitized = sanitizeQuestionnaireData(data);
+      // Clear the in-progress draft once submitted.
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
       onComplete({
         ...sanitized,
-        exact_age: age,
-        age_group: ageToGroup(age),
-        calculated_age: age,
+        gender: data.gender || '',
+        food_preference: data.food_preference || '',
+        dairy_intake: data.dairy_intake || '',
+        monthly_budget_inr: data.monthly_budget_inr ? Number(data.monthly_budget_inr) : null,
         budget_range: 'mid-range',
-        budget_amount: 1500,
+        budget_amount: data.monthly_budget_inr ? Number(data.monthly_budget_inr) : 1500,
         primary_concerns: sanitized.concerns.slice(0, 3),
         secondary_concerns: sanitized.concerns.slice(3)
       });
     }
   };
 
-  // Max date = today (no future DOB)
-  const maxDate = new Date().toISOString().split('T')[0];
-  // Min date = 100 years ago
-  const minDate = new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0];
-
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
       <div className="text-center pt-10 pb-4 px-6">
-        <h1 className="text-4xl font-bold mb-1" style={{ color: '#FF69B4' }}>Célure</h1>
+        <h1 className="text-4xl font-bold mb-1" style={{ color: '#FF69B4' }}>Célure AI</h1>
         <p className="text-pink-300 text-xs tracking-widest">SKINCARE, PERFECTED BY AI</p>
       </div>
 
@@ -179,77 +188,8 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
               <p className="text-gray-400 text-sm">{step.description}</p>
             </div>
 
-            {/* STEP 1: Personal Info */}
+            {/* STEP 1: Skin Type */}
             {currentStep === 0 && (
-              <div className="space-y-5">
-                <div>
-                  <Label className="text-gray-300 text-sm mb-2 block">Name</Label>
-                  <Input
-                    placeholder="e.g. Priya Sharma"
-                    value={data.name}
-                    onChange={(e) => setData({ ...data, name: e.target.value })}
-                    className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-gray-300 text-sm mb-2 block">Email *</Label>
-                  <Input
-                    type="email"
-                    placeholder="yourname@email.com"
-                    value={data.email}
-                    onChange={handleEmailChange}
-                    className={`bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12 rounded-xl ${
-                      emailError ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {emailError && (
-                    <p className="text-red-400 text-xs mt-1">{emailError}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label className="text-gray-300 text-sm mb-3 block">Gender *</Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: 'male', label: 'Male' },
-                      { value: 'female', label: 'Female' },
-                      { value: 'other', label: 'Other' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => { setData({ ...data, gender: opt.value }); applyGenderTheme(opt.value); }}
-                        className={`p-4 rounded-2xl border-2 transition-all text-sm font-semibold ${
-                          data.gender === opt.value ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'
-                        }`}>
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-gray-300 text-sm mb-2 block">Date of Birth *</Label>
-                  <input
-                    type="date"
-                    value={data.dob}
-                    min={minDate}
-                    max={maxDate}
-                    onChange={(e) => setData({ ...data, dob: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-800 text-white h-12 rounded-xl px-4 text-sm focus:outline-none focus:border-pink-500 appearance-none"
-                    style={{ colorScheme: 'dark' }}
-                  />
-                  {data.dob && (
-                    <p className="text-pink-400 text-xs mt-1">
-                      Age: {calcAge(data.dob)} years
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Skin Profile */}
-            {currentStep === 1 && (
               <div className="space-y-5">
                 <div>
                   <Label className="text-gray-300 text-sm mb-1 block">Skin Type(s) * <span className="text-gray-500">(select 1–4)</span></Label>
@@ -280,6 +220,27 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                 </div>
 
                 <div>
+                  <Label className="text-gray-300 text-sm mb-3 block">Gender (optional)</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: 'male', label: 'Male' },
+                      { value: 'female', label: 'Female' },
+                      { value: 'other', label: 'Other' },
+                      { value: 'prefer_not_to_say', label: 'Skip' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setData({ ...data, gender: opt.value }); applyGenderTheme(opt.value === 'prefer_not_to_say' ? '' : opt.value); }}
+                        className={`p-3 rounded-2xl border-2 transition-all text-xs font-semibold ${
+                          data.gender === opt.value ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'
+                        }`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <Label className="text-gray-300 text-sm mb-2 block">Allergies (Optional)</Label>
                   <p className="text-xs text-gray-500 mb-2">Separate multiple with commas</p>
                   <Input
@@ -292,8 +253,8 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
               </div>
             )}
 
-            {/* STEP 3: Concerns + Diet */}
-            {currentStep === 2 && (
+            {/* STEP 2: Concerns + Lifestyle */}
+            {currentStep === 1 && (
               <div className="space-y-5">
                 <div>
                   <Label className="text-gray-300 text-sm mb-1 block">Skin Concerns * <span className="text-gray-500">(select all that apply)</span></Label>
@@ -320,13 +281,9 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                 </div>
 
                 <div>
-                  <Label className="text-gray-300 text-sm mb-3 block">Diet *</Label>
+                  <Label className="text-gray-300 text-sm mb-3 block">Diet Type *</Label>
                   <div className="space-y-3">
-                    {[
-                      { value: 'healthy', label: '🥗 Balanced', desc: 'Fruits, vegetables & whole foods' },
-                      { value: 'semi_healthy', label: '🍱 Semi-Healthy', desc: 'Mix of healthy & occasional processed' },
-                      { value: 'junk_food', label: '🍔 Mostly Junk', desc: 'High sugar, fried & processed foods' }
-                    ].map((opt) => (
+                    {DIET_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => setData({ ...data, diet_type: opt.value })}
@@ -339,11 +296,60 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-3 block">Food Preference *</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {FOOD_PREFERENCE.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setData({ ...data, food_preference: opt.value })}
+                        className={`p-3 rounded-2xl border-2 transition-all text-xs font-semibold ${
+                          data.food_preference === opt.value ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'
+                        }`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-3 block">Dairy Intake *</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DAIRY_INTAKE.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setData({ ...data, dairy_intake: opt.value })}
+                        className={`p-3 rounded-2xl border-2 transition-all text-xs font-semibold ${
+                          data.dairy_intake === opt.value ? 'bg-pink-500 border-pink-500' : 'bg-gray-900 border-gray-800'
+                        }`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-2 block">Monthly Skincare Budget (₹) *</Label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="e.g. 1500"
+                      value={data.monthly_budget_inr}
+                      onChange={(e) => setData({ ...data, monthly_budget_inr: e.target.value })}
+                      className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12 rounded-xl pl-8"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Per month, in rupees</p>
+                </div>
               </div>
             )}
 
-            {/* STEP 4: Location */}
-            {currentStep === 3 && (
+            {/* STEP 3: City */}
+            {currentStep === 2 && (
               <div className="space-y-5">
                 <div>
                   <Label className="text-gray-300 text-sm mb-2 block">City *</Label>
@@ -353,7 +359,7 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                     onChange={(e) => setData({ ...data, location_city: e.target.value })}
                     className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 h-12 rounded-xl"
                   />
-                  <p className="text-xs text-gray-500 mt-2">🌫️ We use AQI & pollution data to adjust your routine</p>
+                  <p className="text-xs text-gray-500 mt-2">We use AQI & pollution data to adjust your routine</p>
                 </div>
 
                 <div>
@@ -371,20 +377,20 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
                   <p className="text-pink-400 text-sm font-semibold mb-3">Profile Summary</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <p className="text-gray-500 text-xs">Name</p>
-                      <p className="text-white">{data.name || '—'}</p>
-                    </div>
-                    <div>
                       <p className="text-gray-500 text-xs">Skin Type(s)</p>
                       <p className="text-white capitalize">{(data.skin_types || []).join(', ') || '—'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">Age</p>
-                      <p className="text-white">{data.dob ? `${calcAge(data.dob)} yrs` : '—'}</p>
-                    </div>
-                    <div>
                       <p className="text-gray-500 text-xs">Concerns</p>
                       <p className="text-white">{(data.concerns || []).length} selected</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Diet</p>
+                      <p className="text-white capitalize">{data.diet_type ? DIET_OPTIONS.find(d => d.value === data.diet_type)?.label : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Budget</p>
+                      <p className="text-white">{data.monthly_budget_inr ? `₹${data.monthly_budget_inr}/mo` : '—'}</p>
                     </div>
                   </div>
                 </div>
@@ -413,6 +419,10 @@ export default function QuestionnaireForm({ onComplete, onBack, prefillData }) {
             {currentStep === STEPS.length - 1 ? '🚀 Start My Analysis' : 'Next →'}
           </Button>
         </div>
+        {/* Inline missing-field message when Next is disabled */}
+        {!canProceed() && reason && (
+          <p className="text-center text-amber-400 text-xs mt-2">{reason}</p>
+        )}
       </div>
     </div>
   );
