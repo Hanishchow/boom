@@ -1,7 +1,13 @@
 /**
  * DataDeletion
- * Allows users to permanently delete all their data (GDPR-style).
- * Deletes: SkinProfile, SkincareRoutine, ProductRecommendation, AnalysisHistory, AuditLog records.
+ * Permanently deletes the user's data: SkinProfile (questionnaire + results),
+ * AnalysisHistory, SkincareRoutine, ProductRecommendation, UserConsent
+ * (consent records), and best-effort deletion of stored image files.
+ * Shows a confirmation step, then confirms completion.
+ *
+ * NOTE: the platform does not expose a file-deletion integration, so the stored
+ * image blobs cannot be purged from code. All entity records (including the
+ * image URL references) are deleted, which removes the images from the app.
  */
 import React, { useState } from 'react';
 import { Trash2, AlertTriangle, Loader2 } from 'lucide-react';
@@ -28,7 +34,7 @@ export default function DataDeletion({ onDeleted }) {
         success: true
       });
 
-      // Fetch all user's records by email (RLS ensures only own data)
+      // Fetch all the user's records (RLS ensures only own data)
       const [profiles, histories, consentRecords] = await Promise.all([
         base44.entities.SkinProfile.filter({ created_by: email }),
         base44.entities.AnalysisHistory.filter({ created_by: email }),
@@ -37,7 +43,7 @@ export default function DataDeletion({ onDeleted }) {
 
       const profileIds = profiles.map(p => p.id);
 
-      // Delete selfie images from private storage
+      // Best-effort deletion of stored image files (platform may not support this)
       for (const profile of profiles) {
         const imageUrls = [
           profile.face_image_url,
@@ -45,12 +51,11 @@ export default function DataDeletion({ onDeleted }) {
           profile.right_image_url,
           profile.left_image_url
         ].filter(Boolean);
-
         for (const url of imageUrls) {
           try {
             await base44.integrations.Core.DeletePrivateFile({ file_uri: url });
           } catch {
-            // File may already be deleted — continue
+            // File deletion not available — references are still removed below
           }
         }
       }
@@ -65,16 +70,19 @@ export default function DataDeletion({ onDeleted }) {
         ])
       );
 
-      // Delete profiles, history, and consent records
+      // Delete profiles, history and consent records
       await Promise.all([
         ...profiles.map(p => base44.entities.SkinProfile.delete(p.id)),
         ...histories.map(h => base44.entities.AnalysisHistory.delete(h.id)),
         ...consentRecords.map(c => base44.entities.UserConsent.delete(c.id))
       ]);
 
-      // Clear local session flags
-      localStorage.removeItem(`onboardingComplete_${user?.full_name || email}`);
-      localStorage.removeItem('currentProfileName');
+      // Clear local questionnaire draft + session flags
+      try {
+        localStorage.removeItem('celure_q_draft');
+        localStorage.removeItem(`onboardingComplete_${user?.full_name || email}`);
+        localStorage.removeItem('currentProfileName');
+      } catch (e) {}
 
       setStep('done');
       setTimeout(() => {
@@ -90,7 +98,7 @@ export default function DataDeletion({ onDeleted }) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center">
         <p className="text-green-400 font-semibold mb-1">✓ All data deleted</p>
-        <p className="text-gray-400 text-sm">Logging you out...</p>
+        <p className="text-gray-400 text-sm">Your profile, history, routines, recommendations and consent records have been removed. Logging you out...</p>
       </div>
     );
   }
@@ -103,7 +111,7 @@ export default function DataDeletion({ onDeleted }) {
           <div>
             <p className="text-red-300 font-semibold text-sm mb-1">This cannot be undone</p>
             <p className="text-red-400/80 text-xs leading-relaxed">
-              This will permanently delete your skin profile, all analyses, product recommendations, routines, and selfie references. Your account will be logged out.
+              This permanently deletes your skin profile, questionnaire answers, analysis history, routines, product recommendations, consent records and selfie references. Your account will be logged out.
             </p>
           </div>
         </div>
@@ -145,7 +153,7 @@ export default function DataDeletion({ onDeleted }) {
         <Trash2 className="w-5 h-5 text-red-500" />
         <div>
           <p className="text-red-400 text-sm font-medium">Delete All My Data</p>
-          <p className="text-gray-500 text-xs">Permanently removes all your skin data & images</p>
+          <p className="text-gray-500 text-xs">Permanently removes your profile, history, consent records & image references</p>
         </div>
       </div>
     </button>

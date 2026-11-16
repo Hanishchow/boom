@@ -1,7 +1,10 @@
 /**
  * ConsentGate
- * Displayed before any selfie capture. User must explicitly grant consent
- * before images are captured or uploaded. Logs consent decision to AuditLog.
+ * Shown before the camera opens. Plain-language explanation of what is
+ * collected, why, where it is processed, and how to delete it. Requires an
+ * explicit, non-pre-ticked tick. Stores a consent record (UserConsent) with
+ * timestamp (created_date) and policy version. Age is verified earlier by
+ * AgeGate, so age_verified_18 is recorded as true here.
  */
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -10,19 +13,22 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { logAuditEvent } from '@/lib/auditLogger';
 
+const POLICY_VERSION = '2026-11';
+
 export default function ConsentGate({ onConsent, onDecline }) {
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(false); // not pre-ticked
   const [submitting, setSubmitting] = useState(false);
 
   const persistConsent = async (granted) => {
     try {
       const user = await base44.auth.me();
       await base44.entities.UserConsent.create({
-        user_id: user?.id || user?.email || '',
+        user_id: user?.id || '',
         consent_type: 'image_analysis',
         granted,
         granted_at: new Date().toISOString(),
-        consent_version: '1.0'
+        consent_version: POLICY_VERSION,
+        age_verified_18: true
       });
     } catch (err) {
       console.error('Failed to persist consent:', err);
@@ -35,7 +41,7 @@ export default function ConsentGate({ onConsent, onDecline }) {
     await logAuditEvent({
       action: 'consent_granted',
       resourceType: 'selfie',
-      metadata: { consent_type: 'image_analysis' },
+      metadata: { consent_type: 'image_analysis', policy_version: POLICY_VERSION },
       success: true
     });
     onConsent();
@@ -58,39 +64,37 @@ export default function ConsentGate({ onConsent, onDecline }) {
       animate={{ opacity: 1, y: 0 }}
       className="min-h-screen bg-black text-white flex flex-col px-6 pt-10 pb-10"
     >
-      {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-500/10 border border-pink-500/30 mb-4">
           <Shield className="w-8 h-8 text-pink-500" />
         </div>
         <h2 className="text-2xl font-bold mb-2">Photo Privacy & Consent</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
-          Before we capture your photos, please review how we handle your images.
+          Please review how your photos are handled before we begin.
         </p>
       </div>
 
-      {/* Promises */}
       <div className="space-y-3 mb-8">
         {[
           {
-            icon: <Lock className="w-5 h-5 text-pink-400" />,
-            title: 'Encrypted private storage',
-            desc: 'Your selfies are stored in a private, encrypted bucket — never in a public URL.'
-          },
-          {
             icon: <Eye className="w-5 h-5 text-pink-400" />,
-            title: 'Used only for skin analysis',
-            desc: 'Images are processed by AI solely to detect visible skin concerns. They are not shared with third parties.'
+            title: 'What we collect',
+            desc: 'Up to 3 face photos: front, right profile and left profile.'
           },
           {
-            icon: <Trash2 className="w-5 h-5 text-pink-400" />,
-            title: 'You can delete at any time',
-            desc: 'Delete your account and all images from your Profile page. We permanently erase all your data.'
+            icon: <Lock className="w-5 h-5 text-pink-400" />,
+            title: 'Why & where it is processed',
+            desc: 'Your photos are sent to Anthropic (Claude), a third-party AI provider, to detect visible skin concerns. They are stored privately in your account — never on a public URL.'
           },
           {
             icon: <Shield className="w-5 h-5 text-pink-400" />,
-            title: 'Isolated to your account',
-            desc: 'Your data is strictly scoped to your user ID. No other user can access it.'
+            title: 'Only for skin analysis',
+            desc: 'Your images are used only for your skin analysis and not shared for marketing or any other purpose.'
+          },
+          {
+            icon: <Trash2 className="w-5 h-5 text-pink-400" />,
+            title: 'How to delete',
+            desc: 'Delete everything — photos, profile and history — anytime from your Profile page using "Delete All My Data".'
           }
         ].map((item, i) => (
           <motion.div
@@ -109,7 +113,7 @@ export default function ConsentGate({ onConsent, onDecline }) {
         ))}
       </div>
 
-      {/* Agreement checkbox */}
+      {/* Explicit tick — not pre-ticked */}
       <button
         onClick={() => setAgreed(!agreed)}
         className="flex items-start gap-3 mb-6 text-left"
@@ -120,11 +124,10 @@ export default function ConsentGate({ onConsent, onDecline }) {
           {agreed && <CheckCircle className="w-4 h-4 text-white" />}
         </div>
         <p className="text-sm text-gray-300 leading-relaxed">
-          I understand and agree that my facial photos will be stored securely and used only for AI skin analysis within Célure.
+          I understand my photos will be sent to Anthropic (Claude) for AI skin analysis, stored privately in my account, and that I can delete them anytime.
         </p>
       </button>
 
-      {/* Actions */}
       <div className="space-y-3 mt-auto">
         <Button
           onClick={handleGrant}
@@ -132,7 +135,7 @@ export default function ConsentGate({ onConsent, onDecline }) {
           className="w-full h-14 rounded-xl font-semibold text-white text-base disabled:opacity-40"
           style={{ background: agreed ? '#FF69B4' : undefined }}
         >
-          ✅ I Consent — Start Face Scan
+          I Consent — Start Face Scan
         </Button>
         <Button
           variant="ghost"

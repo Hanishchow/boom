@@ -16,7 +16,7 @@ export async function logAuditEvent({ action, resourceType = '', resourceId = ''
 
     await base44.entities.AuditLog.create({
       user_id: user?.id || 'unknown',
-      user_email: user?.email || 'unknown',
+      user_email: '',
       action,
       resource_type: resourceType,
       resource_id: resourceId,

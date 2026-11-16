@@ -7,6 +7,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 
 import QuestionnaireForm from '@/components/skincare/QuestionnaireForm';
 import SelfieCapture from '@/components/skincare/SelfieCapture';
+import AgeGate from '@/components/security/AgeGate';
 import { 
   analyzeQuestionnaire, 
   synthesizeSkinProfile,
@@ -22,9 +23,29 @@ import { useAqi } from '@/hooks/useAqi';
 
 const STEPS = {
   LOADING: 'loading',
+  AGE_GATE: 'age_gate',
   QUESTIONNAIRE: 'questionnaire',
   IMAGE_UPLOAD: 'image_upload',
   ANALYZING: 'analyzing'
+};
+
+const calcAge = (dob) => {
+  if (!dob) return null;
+  const today = new Date();
+  const birth = new Date(dob);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+};
+
+const ageToGroup = (age) => {
+  if (age == null) return '';
+  if (age < 20) return 'under_20';
+  if (age < 30) return '20_30';
+  if (age < 40) return '30_40';
+  if (age < 50) return '40_50';
+  return 'above_50';
 };
 
 export default function SkinAnalysis() {
@@ -36,6 +57,7 @@ export default function SkinAnalysis() {
   const [prefillData, setPrefillData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState('');
+  const [dob, setDob] = useState('');
 
   useEffect(() => {
     loadExistingProfile();
@@ -50,7 +72,10 @@ export default function SkinAnalysis() {
       const profiles = await base44.entities.SkinProfile.filter({ created_by: currentUser.email }, '-created_date', 1);
       if (profiles.length > 0) {
         const p = profiles[0];
-        setPrefillData({
+        // Returning user with a verified DOB: skip the age gate
+        if (p.dob) {
+          setDob(p.dob);
+          setPrefillData({
           skin_type: p.skin_type || '',
           skin_types: p.skin_types || (p.skin_type ? [p.skin_type] : []),
           gender: p.gender || '',
@@ -63,11 +88,15 @@ export default function SkinAnalysis() {
           location_city: p.location_city || '',
           pincode: p.pincode || ''
         });
+          setCurrentStep(STEPS.QUESTIONNAIRE);
+          return;
+        }
       }
     } catch (err) {
       console.error('Error loading profile:', err);
     }
-    setCurrentStep(STEPS.QUESTIONNAIRE);
+    // First-time user (or no verified DOB): require the age gate before anything else
+    setCurrentStep(STEPS.AGE_GATE);
   };
 
   const handleQuestionnaireComplete = (data) => {
@@ -170,10 +199,10 @@ export default function SkinAnalysis() {
         user_id: userId,
         name: '',
         email: currentUserEmail,
-        dob: '',
-        calculated_age: null,
+        dob: dob || '',
+        calculated_age: dob ? calcAge(dob) : null,
         gender: qData.gender || '',
-        age_group: '',
+        age_group: dob ? ageToGroup(calcAge(dob)) : '',
         // Skin data
         ...skinProfile,
         skin_types: qData.skin_types || [],
@@ -287,6 +316,15 @@ export default function SkinAnalysis() {
         {currentStep === STEPS.LOADING && (
           <motion.div key="loading" className="min-h-screen flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+          </motion.div>
+        )}
+
+        {currentStep === STEPS.AGE_GATE && (
+          <motion.div key="age-gate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <AgeGate
+              onPass={(verifiedDob) => { setDob(verifiedDob); setCurrentStep(STEPS.QUESTIONNAIRE); }}
+              onBack={() => navigate(createPageUrl('Home'))}
+            />
           </motion.div>
         )}
 

@@ -1,0 +1,72 @@
+{
+  "name": "UserConsent",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID who gave or declined consent"
+    },
+    "consent_type": {
+      "type": "string",
+      "enum": [
+        "image_analysis"
+      ],
+      "description": "Type of consent recorded"
+    },
+    "granted": {
+      "type": "boolean",
+      "description": "Whether consent was granted (true) or declined (false)"
+    },
+    "granted_at": {
+      "type": "string",
+      "description": "ISO timestamp when consent was recorded"
+    },
+    "consent_version": {
+      "type": "string",
+      "description": "Privacy policy / consent version the user agreed to"
+    },
+    "age_verified_18": {
+      "type": "boolean",
+      "description": "Whether the user verified they are 18 or older"
+    }
+  },
+  "required": [
+    "consent_type",
+    "granted",
+    "consent_version"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

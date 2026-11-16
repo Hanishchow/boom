@@ -26,11 +26,10 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Unauthorized: authentication required' }, 401);
     }
 
-    const userId = user.email;
-
-    // Rate limit
+    // Rate limit by user ID (not email) — never log personal data
+    const userId = user.id || user.email;
     if (!checkRateLimit(userId)) {
-      console.warn(`[analyze-skin] Rate limit exceeded for ${userId}`);
+      console.warn('[analyze-skin] Rate limit exceeded for a user');
       return jsonResponse({ error: 'Rate limit exceeded. Max 3 analyses per hour.' }, 429);
     }
 
@@ -50,7 +49,7 @@ Deno.serve(async (req) => {
     const content = buildContent(frontImage, rightImage, leftImage);
     const result = await callClaudeWithRetry(content);
 
-    console.log(`[analyze-skin] Success for ${userId}: ${result.detected_concerns?.length || 0} concerns, confidence ${result.analysis_confidence}`);
+    console.log(`[analyze-skin] Success: ${result.detected_concerns?.length || 0} concerns, confidence ${result.analysis_confidence}`);
 
     return jsonResponse(result);
 

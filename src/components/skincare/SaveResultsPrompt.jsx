@@ -5,33 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Save } from 'lucide-react';
 
-const calcAge = (dob) => {
-  if (!dob) return null;
-  const today = new Date();
-  const birth = new Date(dob);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-};
-
-const ageToGroup = (age) => {
-  if (age == null) return '';
-  if (age < 20) return 'under_20';
-  if (age < 30) return '20_30';
-  if (age < 40) return '30_40';
-  if (age < 50) return '40_50';
-  return 'above_50';
-};
-
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-// Shown AFTER the result is displayed. Collects name + DOB (+ email only if not signed in)
-// so the user can save and track progress. A signed-in user is never asked for their email.
+// Shown AFTER the result is displayed. Date of birth is already collected at
+// the age gate, so here we only ask for name (+ email if not signed in) to save
+// the results. A signed-in user is never asked for their email again.
 export default function SaveResultsPrompt({ profile, onSaved }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [dob, setDob] = useState('');
   const [signedInEmail, setSignedInEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -46,22 +27,18 @@ export default function SaveResultsPrompt({ profile, onSaved }) {
   }, []);
 
   const emailValid = signedInEmail ? true : (email && isValidEmail(email));
-  const canSubmit = name.trim() && dob && emailValid;
+  const canSubmit = name.trim() && emailValid;
 
   const handleSubmit = async () => {
     if (!canSubmit) {
-      setError('Please enter your name, date of birth and email.');
+      setError('Please enter your name and email.');
       return;
     }
     setSaving(true);
     setError('');
     try {
-      const age = calcAge(dob);
       const update = {
         name: name.trim(),
-        dob,
-        calculated_age: age,
-        age_group: ageToGroup(age),
         email: signedInEmail || email.trim()
       };
       await base44.entities.SkinProfile.update(profile.id, update);
@@ -72,13 +49,10 @@ export default function SaveResultsPrompt({ profile, onSaved }) {
     setSaving(false);
   };
 
-  const maxDate = new Date().toISOString().split('T')[0];
-  const minDate = new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0];
-
   return (
     <div className="mx-4 mb-6 bg-gradient-to-r from-pink-600/20 to-purple-600/20 border border-pink-500/40 rounded-3xl p-5">
       <h3 className="text-lg font-bold text-white mb-1">Save your results</h3>
-      <p className="text-gray-400 text-xs mb-4">Save your name and date of birth to track progress and rescan later.</p>
+      <p className="text-gray-400 text-xs mb-4">Save your name so you can track progress and rescan later.</p>
 
       {signedInEmail && (
         <div className="mb-4 bg-gray-900/60 rounded-xl p-3 text-xs text-gray-300">
@@ -109,20 +83,6 @@ export default function SaveResultsPrompt({ profile, onSaved }) {
             />
           </div>
         )}
-
-        <div>
-          <Label className="text-gray-300 text-sm mb-2 block">Date of Birth *</Label>
-          <input
-            type="date"
-            value={dob}
-            min={minDate}
-            max={maxDate}
-            onChange={(e) => setDob(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 text-white h-12 rounded-xl px-4 text-sm focus:outline-none focus:border-pink-500 appearance-none"
-            style={{ colorScheme: 'dark' }}
-          />
-          {dob && <p className="text-pink-400 text-xs mt-1">Age: {calcAge(dob)} years</p>}
-        </div>
 
         {error && <p className="text-red-400 text-xs">{error}</p>}
 

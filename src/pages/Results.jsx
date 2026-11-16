@@ -127,7 +127,7 @@ export default function Results() {
       </div>
 
       {/* Save name / DOB after the result is shown */}
-      {profile && (!profile.name || !profile.dob) ? (
+      {profile && !profile.name ? (
         <SaveResultsPrompt
           profile={profile}
           onSaved={(update) => setProfile({ ...profile, ...update })}

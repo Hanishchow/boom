@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Link } from 'react-router-dom';
 import { User, Bell, Moon, Shield, HelpCircle, ChevronRight } from 'lucide-react';
 import DataDeletion from '@/components/security/DataDeletion';
+import DownloadMyData from '@/components/security/DownloadMyData';
 import { useGenderTheme } from '@/lib/GenderThemeContext';
 
 export default function Profile() {
@@ -152,8 +153,10 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Data deletion */}
+        {/* Data download & deletion */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 mb-4">
+          <DownloadMyData />
+          <div className="border-t border-gray-800 my-1" />
           <DataDeletion />
         </div>
 
