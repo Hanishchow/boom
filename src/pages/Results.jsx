@@ -199,7 +199,7 @@ export default function Results() {
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-amber-300/80 text-xs leading-relaxed">
-                This is not medical advice. For persistent skin issues, consult a qualified dermatologist.
+                Cosmetic guidance only, not a medical diagnosis. See a dermatologist for any concern.
               </p>
             </div>
           </motion.div>
@@ -237,14 +237,6 @@ export default function Results() {
           Start New Scan
         </Button>
 
-        {/* Surgery Simulator CTA */}
-        <button
-          onClick={() => navigate(`/surgery-simulator${profile?.face_image_url ? `?photo=${encodeURIComponent(profile.face_image_url)}` : ''}`)}
-          className="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full h-14 flex items-center justify-center gap-2 text-sm font-medium"
-        >
-          <Sparkles className="w-5 h-5" />
-          Explore what cosmetic procedures could enhance your features →
-        </button>
       </div>
     </div>
   );

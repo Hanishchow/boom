@@ -12,7 +12,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import Selfies from './pages/Selfies';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import SurgerySimulator from './pages/SurgerySimulator';
+import TermsOfUse from './pages/TermsOfUse';
+import RefundPolicy from './pages/RefundPolicy';
+import Grievance from './pages/Grievance';
 import DermatologistFlow from './pages/DermatologistFlow';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from './pages/Login';
@@ -71,8 +73,10 @@ const AuthenticatedApp = () => {
         <Route path="/Selfies" element={<Selfies />} />
         <Route path="/About" element={<LayoutWrapper currentPageName="About"><About /></LayoutWrapper>} />
         <Route path="/Contact" element={<LayoutWrapper currentPageName="Contact"><Contact /></LayoutWrapper>} />
-        <Route path="/surgery-simulator" element={<LayoutWrapper currentPageName="SurgerySimulator"><SurgerySimulator /></LayoutWrapper>} />
         <Route path="/dermatologist-flow" element={<DermatologistFlow />} />
+        <Route path="/terms-of-use" element={<LayoutWrapper currentPageName="TermsOfUse"><TermsOfUse /></LayoutWrapper>} />
+        <Route path="/refund-policy" element={<LayoutWrapper currentPageName="RefundPolicy"><RefundPolicy /></LayoutWrapper>} />
+        <Route path="/grievance" element={<LayoutWrapper currentPageName="Grievance"><Grievance /></LayoutWrapper>} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

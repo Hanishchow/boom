@@ -9,12 +9,15 @@ function Footer() {
       <Link to="/About" className="hover:text-pink-400 transition-colors">About</Link>
       <Link to="/Contact" className="hover:text-pink-400 transition-colors">Contact</Link>
       <Link to="/PrivacyPolicy" className="hover:text-pink-400 transition-colors">Privacy</Link>
+      <Link to="/terms-of-use" className="hover:text-pink-400 transition-colors">Terms</Link>
+      <Link to="/refund-policy" className="hover:text-pink-400 transition-colors">Refunds</Link>
+      <Link to="/grievance" className="hover:text-pink-400 transition-colors">Grievance</Link>
     </div>
   );
 }
 
 export default function Layout({ children, currentPageName }) {
-  const hideNav = ['SkinAnalysis', 'SurgerySimulator'].includes(currentPageName);
+  const hideNav = ['SkinAnalysis'].includes(currentPageName);
 
   return (
     <div className="min-h-screen bg-black text-white">
