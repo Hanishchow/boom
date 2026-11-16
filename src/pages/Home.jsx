@@ -16,8 +16,8 @@ export default function Home() {
 
       {/* Hero / promise */}
       <div className="px-6 pt-6 pb-4 text-center">
-        <h2 className="text-2xl font-bold mb-3 leading-tight">
-          Your skin, understood — in one scan.
+        <h2 className="text-2xl font-bold mb-3 leading-tight">Skincare 
+
         </h2>
         <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
           A personalised skincare routine built for Indian skin, climate and budget.
@@ -25,8 +25,8 @@ export default function Home() {
         <button
           onClick={() => navigate(createPageUrl('SkinAnalysis'))}
           className="w-full max-w-sm mx-auto h-14 rounded-full font-semibold text-white text-base flex items-center justify-center gap-2"
-          style={{ background: '#FF69B4' }}
-        >
+          style={{ background: '#FF69B4' }}>
+          
           <Camera className="w-5 h-5" />
           Start free skin scan
         </button>
@@ -72,6 +72,6 @@ export default function Home() {
           <p className="text-sm text-gray-200">Cosmetic guidance, not a medical diagnosis — see a dermatologist for any concern.</p>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
