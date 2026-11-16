@@ -16,7 +16,7 @@ export default function Home() {
 
       {/* Hero / promise */}
       <div className="px-6 pt-6 pb-4 text-center">
-        <h2 className="text-2xl font-bold mb-3 leading-tight">Skincare 
+        <h2 className="text-2xl font-bold mb-3 leading-tight">Skincare made 
 
         </h2>
         <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
